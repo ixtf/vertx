@@ -1,6 +1,6 @@
 package spi;
 
-import com.github.ixtf.vertx.Envelope;
+import com.github.ixtf.vertx.RCReplyEnvelope;
 import com.google.common.collect.Maps;
 import com.google.inject.Singleton;
 import org.eclipse.microprofile.reactive.streams.operators.ReactiveStreams;
@@ -44,20 +44,20 @@ public class TestResource {
 
     @Path("ReactiveStreams1/{id}")
     @GET
-    public CompletionStage<Envelope> ReactiveStreams1(@PathParam("id") String id) {
+    public CompletionStage<RCReplyEnvelope> ReactiveStreams1(@PathParam("id") String id) {
         return ReactiveStreams.of("ReactiveStreams1", id)
                 .toList()
                 .run()
-                .thenApply(Envelope::data);
+                .thenApply(RCReplyEnvelope::data);
     }
 
     @Path("queryParamTest1")
     @GET
-    public CompletionStage<Envelope> queryParamTest1(@QueryParam("string") String string,
-                                                     @QueryParam("boolean") boolean b,
-                                                     @QueryParam("Boolean") Boolean B,
-                                                     @QueryParam("stringDefault") @DefaultValue("stringDefault") String stringDefault,
-                                                     @QueryParam("ld") LocalDate ld) {
+    public CompletionStage<RCReplyEnvelope> queryParamTest1(@QueryParam("string") String string,
+                                                            @QueryParam("boolean") boolean b,
+                                                            @QueryParam("Boolean") Boolean B,
+                                                            @QueryParam("stringDefault") @DefaultValue("stringDefault") String stringDefault,
+                                                            @QueryParam("ld") LocalDate ld) {
         final Map result = Maps.newHashMap();
         result.put("boolean", b);
         result.put("Boolean", B);
@@ -65,7 +65,7 @@ public class TestResource {
         result.put("stringDefault", stringDefault);
         result.put("ld", ld);
         return ReactiveStreams.of(result)
-                .map(Envelope::data)
+                .map(RCReplyEnvelope::data)
                 .toList()
                 .run()
                 .thenApply(it -> it.get(0));
@@ -73,11 +73,11 @@ public class TestResource {
 
     @Path("queryParamTest2")
     @GET
-    public Publisher<Envelope> queryParamTest2(@QueryParam("string") String string,
-                                               @QueryParam("boolean") boolean b,
-                                               @QueryParam("Boolean") Boolean B,
-                                               @QueryParam("stringDefault") @DefaultValue("stringDefault") String stringDefault,
-                                               @QueryParam("ld") LocalDate ld) {
+    public Publisher<RCReplyEnvelope> queryParamTest2(@QueryParam("string") String string,
+                                                      @QueryParam("boolean") boolean b,
+                                                      @QueryParam("Boolean") Boolean B,
+                                                      @QueryParam("stringDefault") @DefaultValue("stringDefault") String stringDefault,
+                                                      @QueryParam("ld") LocalDate ld) {
         final Map result = Maps.newHashMap();
         result.put("boolean", b);
         result.put("Boolean", B);
@@ -85,7 +85,7 @@ public class TestResource {
         result.put("stringDefault", stringDefault);
         result.put("ld", ld);
         return ReactiveStreams.of(result)
-                .map(Envelope::data)
+                .map(RCReplyEnvelope::data)
                 .buildRs();
     }
 }

@@ -1,4 +1,4 @@
-package com.github.ixtf.vertx.jax_rs.api;
+package com.github.ixtf.vertx.ws.rs;
 
 import com.github.ixtf.japp.core.J;
 import org.apache.commons.lang3.ArrayUtils;
@@ -8,6 +8,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.lang.reflect.Method;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -119,5 +120,9 @@ public final class JaxRs {
                 .map(Produces::value)
                 .filter(ArrayUtils::isNotEmpty)
                 .orElse(new String[0]);
+    }
+
+    public static Predicate<Class> resourceFilter() {
+        return clazz -> clazz.getAnnotation(Path.class) != null;
     }
 }

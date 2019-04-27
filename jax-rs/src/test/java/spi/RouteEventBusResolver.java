@@ -1,16 +1,14 @@
 package spi;
 
-import com.github.ixtf.vertx.jax_rs.spi.ResourceProviderJaxRs;
+import com.github.ixtf.vertx.ws.rs.JaxRsRouteResolver;
 import com.google.common.collect.Sets;
 
 import java.util.Set;
 
-import static spi.Test.INJECTOR;
-
 /**
  * @author jzb 2019-02-28
  */
-public class TestResourceProvider extends ResourceProviderJaxRs {
+public class RouteEventBusResolver extends JaxRsRouteResolver {
     @Override
     protected Set<String> getPackages() {
         return null;
@@ -21,8 +19,4 @@ public class TestResourceProvider extends ResourceProviderJaxRs {
         return Sets.newHashSet(TestResource.class);
     }
 
-    @Override
-    public <T> T getProxy(Class<T> resourceClass) {
-        return INJECTOR.getInstance(resourceClass);
-    }
 }

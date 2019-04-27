@@ -1,6 +1,5 @@
 package vertx;
 
-import com.hazelcast.config.Config;
 import io.reactivex.Completable;
 import io.vertx.core.DeploymentOptions;
 import io.vertx.core.VertxOptions;
@@ -10,11 +9,9 @@ import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.eventbus.Message;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.RoutingContext;
-import io.vertx.spi.cluster.hazelcast.HazelcastClusterManager;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.InetAddress;
 import java.time.LocalTime;
 import java.util.concurrent.TimeUnit;
 
@@ -32,14 +29,7 @@ public class Agent extends AbstractVerticle {
 
     @SneakyThrows
     private static VertxOptions vertxOptions() {
-        final Config config = new Config();
-        config.getGroupConfig().setName("vertx-test-cluster");
-        final HazelcastClusterManager hazelcastClusterManager = new HazelcastClusterManager(config);
-
         return new VertxOptions()
-                .setClusterManager(hazelcastClusterManager)
-                .setClusterHost(InetAddress.getLocalHost().getHostAddress())
-//                .setWorkerPoolSize(10_000)
                 .setMaxEventLoopExecuteTime(TimeUnit.SECONDS.toNanos(6))
                 .setMaxWorkerExecuteTime(TimeUnit.HOURS.toNanos(1));
     }

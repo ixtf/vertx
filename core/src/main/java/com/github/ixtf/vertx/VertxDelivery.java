@@ -1,4 +1,4 @@
-package com.github.ixtf.vertx.api;
+package com.github.ixtf.vertx;
 
 import io.vertx.core.eventbus.DeliveryOptions;
 

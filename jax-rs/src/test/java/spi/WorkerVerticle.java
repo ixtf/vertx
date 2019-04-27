@@ -21,12 +21,8 @@ public class WorkerVerticle extends AbstractVerticle {
                 }).rxCompletionHandler()
         );
 
-        final Completable jaxRs$ = Completable.mergeArray(
-                Jvertx.routes().map(route ->
-                        vertx.eventBus().consumer(route.getAddress(), route.getMessageHandler()).rxCompletionHandler()
-                ).toArray(Completable[]::new)
-        );
-        return Completable.mergeArray(other$, jaxRs$);
+        Jvertx.resolve(RouteEBResolver.class).forEach(it -> it.consumer(vertx));
+        return Completable.mergeArray(other$);
     }
 
 }

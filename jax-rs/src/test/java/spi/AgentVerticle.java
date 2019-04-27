@@ -6,13 +6,13 @@ import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
 import io.vertx.reactivex.core.http.HttpServerResponse;
-import io.vertx.reactivex.ext.web.Route;
 import io.vertx.reactivex.ext.web.Router;
 
 /**
  * @author jzb 2019-02-28
  */
 public class AgentVerticle extends AbstractVerticle {
+
     @Override
     public Completable rxStart() {
         final Router router = Router.router(vertx);
@@ -27,12 +27,7 @@ public class AgentVerticle extends AbstractVerticle {
             }, rc::fail);
         });
 
-        Jvertx.routes().forEach(routeRepresentation -> {
-            final Route route = router.route(routeRepresentation.getHttpMethod(), routeRepresentation.getPath());
-            routeRepresentation.consumes().forEach(route::consumes);
-            routeRepresentation.produces().forEach(route::produces);
-            route.handler(routeRepresentation.getRoutingContextHandler());
-        });
+        Jvertx.resolve(RouteResolver.class).forEach(it -> it.router(router));
         final HttpServerOptions httpServerOptions = new HttpServerOptions()
                 .setDecompressionSupported(true)
                 .setCompressionSupported(true);
