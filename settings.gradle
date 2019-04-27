@@ -1,0 +1,4 @@
+rootProject.name = 'com.github.ixtf.vertx'
+include 'core'
+include 'jax-rs'
+

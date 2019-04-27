@@ -1,0 +1,12 @@
+dependencies {
+    compile project(":core"),
+            "com.google.inject:guice",
+            "io.vertx:vertx-auth-jwt"
+
+    testCompile "com.github.ixtf.persistence:mongo",
+            "com.github.ixtf.japp:poi"
+    
+    testCompile group: 'org.bouncycastle', name: 'bcprov-ext-jdk15on', version: '1.61'
+    testCompile group: 'org.bouncycastle', name: 'bcpkix-jdk15on', version: '1.61'
+    testCompile group: 'org.bouncycastle', name: 'bcprov-jdk15on', version: '1.61'
+}
