@@ -8,6 +8,7 @@ import org.apache.commons.lang3.StringUtils;
 
 import java.util.Collection;
 import java.util.Set;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public abstract class RepresentationResolver<T> {
@@ -34,7 +35,7 @@ public abstract class RepresentationResolver<T> {
                 }
             }
             return true;
-        });
+        }).filter(classFilter());
     }
 
     @SneakyThrows
@@ -50,6 +51,10 @@ public abstract class RepresentationResolver<T> {
             classLoader = Thread.currentThread().getContextClassLoader();
         }
         return classLoader;
+    }
+
+    protected Predicate<Class> classFilter() {
+        return clazz -> true;
     }
 
 }
