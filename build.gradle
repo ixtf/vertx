@@ -55,7 +55,7 @@ subprojects {
 
         compileOnly "io.vertx:vertx-codegen"
 
-        testCompile "junit:junit",
+        testCompile "org.junit.jupiter:junit-jupiter-engine:5.4.2",
                 "io.vertx:vertx-unit",
                 "io.vertx:vertx-web-client"
     }

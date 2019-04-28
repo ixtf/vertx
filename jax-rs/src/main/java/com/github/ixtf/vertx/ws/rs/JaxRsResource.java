@@ -18,7 +18,7 @@ import static org.apache.commons.lang3.reflect.MethodUtils.getMethodsListWithAnn
  * @author jzb 2019-02-16
  */
 @Slf4j
-class JaxRsResourceRepresentation {
+class JaxRsResource {
     @Getter
     private final Class<?> resourceClass;
     @Getter
@@ -28,29 +28,29 @@ class JaxRsResourceRepresentation {
     @Getter
     private final String[] jaxRsProduces;
 
-    public JaxRsResourceRepresentation(Class<?> resourceClass) {
+    public JaxRsResource(Class<?> resourceClass) {
         this.resourceClass = resourceClass;
         jaxRsPath = JaxRs.getPath(this.resourceClass);
         jaxRsConsumes = JaxRs.getConsumes(this.resourceClass);
         jaxRsProduces = JaxRs.getProduces(this.resourceClass);
     }
 
-    public Stream<JaxRsRouteRepresentation> routes() {
-        Stream<JaxRsRouteRepresentation> result = Stream.empty();
-        Stream<JaxRsRouteRepresentation> routeStream = getMethodsListWithAnnotation(resourceClass, GET.class).stream()
-                .map(it -> JaxRsRouteRepresentation.create(this, it, HttpMethod.GET));
+    public Stream<JaxRsRoute> routes() {
+        Stream<JaxRsRoute> result = Stream.empty();
+        Stream<JaxRsRoute> routeStream = getMethodsListWithAnnotation(resourceClass, GET.class).stream()
+                .map(it -> JaxRsRoute.create(this, it, HttpMethod.GET));
         result = Stream.concat(result, routeStream);
 
         routeStream = getMethodsListWithAnnotation(resourceClass, PUT.class).stream()
-                .map(it -> JaxRsRouteRepresentation.create(this, it, HttpMethod.PUT));
+                .map(it -> JaxRsRoute.create(this, it, HttpMethod.PUT));
         result = Stream.concat(result, routeStream);
 
         routeStream = getMethodsListWithAnnotation(resourceClass, POST.class).stream()
-                .map(it -> JaxRsRouteRepresentation.create(this, it, HttpMethod.POST));
+                .map(it -> JaxRsRoute.create(this, it, HttpMethod.POST));
         result = Stream.concat(result, routeStream);
 
         routeStream = getMethodsListWithAnnotation(resourceClass, DELETE.class).stream()
-                .map(it -> JaxRsRouteRepresentation.create(this, it, HttpMethod.DELETE));
+                .map(it -> JaxRsRoute.create(this, it, HttpMethod.DELETE));
         return Stream.concat(result, routeStream);
     }
 

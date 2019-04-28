@@ -4,6 +4,8 @@ import com.github.ixtf.japp.core.Constant;
 import com.github.ixtf.japp.core.J;
 import com.github.ixtf.japp.core.exception.JException;
 import com.github.ixtf.japp.core.exception.JMultiException;
+import com.github.ixtf.vertx.util.CorsConfig;
+import com.github.ixtf.vertx.util.RepresentationResolver;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;

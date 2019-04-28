@@ -1,6 +1,7 @@
-package com.github.ixtf.vertx;
+package com.github.ixtf.vertx.route;
 
 import com.github.ixtf.japp.core.J;
+import com.github.ixtf.vertx.Jvertx;
 import com.sun.security.auth.UserPrincipal;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.JsonArray;
@@ -14,7 +15,6 @@ import io.vertx.reactivex.ext.web.RoutingContext;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
-import java.io.Serializable;
 import java.lang.reflect.Parameter;
 import java.security.Principal;
 import java.util.List;
@@ -27,7 +27,7 @@ import static java.util.stream.Collectors.toMap;
 /**
  * @author jzb 2019-02-28
  */
-public class RCEnvelope implements Serializable {
+class RCEnvelope {
     private final JsonObject jsonObject;
 
     RCEnvelope(JsonObject jsonObject) {
@@ -50,22 +50,20 @@ public class RCEnvelope implements Serializable {
             final HttpServerResponse response = rc.response();
             final MultiMap headers = reply.headers();
             headers.entries().forEach(it -> response.putHeader(it.getKey(), it.getValue()));
-            final Object replyBody = reply.body();
-            if (replyBody == null) {
+            final Object body = reply.body();
+            if (body == null) {
                 response.end();
-                return;
-            }
-            if (replyBody instanceof String) {
-                final String result = (String) replyBody;
+            } else if (body instanceof String) {
+                final String result = (String) body;
                 if (J.isBlank(result)) {
                     response.end();
                 } else {
                     response.end(result);
                 }
-                return;
+            } else {
+                final byte[] bytes = (byte[]) body;
+                response.end(Buffer.buffer(bytes));
             }
-            final byte[] bytes = (byte[]) replyBody;
-            response.end(Buffer.buffer(bytes));
         }, rc::fail);
     }
 
@@ -107,6 +105,13 @@ public class RCEnvelope implements Serializable {
     private static Function<String, ? extends Object> primitiveFun(Class<?> parameterType) {
         if (String.class.isAssignableFrom(parameterType)) {
             return it -> it;
+        }
+
+        if (boolean.class.isAssignableFrom(parameterType)) {
+            return it -> J.isBlank(it) ? (boolean) false : Boolean.valueOf(it).booleanValue();
+        }
+        if (Boolean.class.isAssignableFrom(parameterType)) {
+            return it -> J.isBlank(it) ? null : Boolean.valueOf(it);
         }
 
         if (int.class.isAssignableFrom(parameterType)) {

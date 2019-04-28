@@ -27,7 +27,7 @@ public class AgentVerticle extends AbstractVerticle {
             }, rc::fail);
         });
 
-        Jvertx.resolve(RouteResolver.class).forEach(it -> it.router(router));
+        Jvertx.resolve(TestRouteResolver.class).forEach(it -> it.router(router));
         final HttpServerOptions httpServerOptions = new HttpServerOptions()
                 .setDecompressionSupported(true)
                 .setCompressionSupported(true);

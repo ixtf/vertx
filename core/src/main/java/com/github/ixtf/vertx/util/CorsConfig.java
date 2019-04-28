@@ -1,4 +1,4 @@
-package com.github.ixtf.vertx;
+package com.github.ixtf.vertx.util;
 
 import lombok.Data;
 

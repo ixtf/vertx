@@ -1,7 +1,7 @@
 package com.github.ixtf.vertx.ws.rs;
 
-import com.github.ixtf.vertx.RepresentationResolver;
-import com.github.ixtf.vertx.RouteEBRepresentation;
+import com.github.ixtf.vertx.util.RepresentationResolver;
+import com.github.ixtf.vertx.route.RouteEBRepresentation;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
@@ -13,12 +13,12 @@ import static java.util.stream.Collectors.toSet;
 public abstract class JaxRsRouteEBResolver extends RepresentationResolver<RouteEBRepresentation> {
 
     @Override
-    protected Stream<? extends RouteEBRepresentation> resolve() {
-        return classes().filter(JaxRs.resourceFilter())
+    public Stream<? extends RouteEBRepresentation> resolve() {
+        return classes().flatMap(JaxRs::resourceStream).filter(JaxRs.resourceFilter())
                 .collect(toSet()).parallelStream()
-                .map(JaxRsResourceRepresentation::new)
-                .flatMap(JaxRsResourceRepresentation::routes)
-                .map(it -> JaxRsRouteEBRepresentation.create(it, this::getProxy));
+                .map(JaxRsResource::new)
+                .flatMap(JaxRsResource::routes)
+                .map(it -> JaxRsRouteEB.create(it, this::getProxy));
     }
 
     protected Object getProxy(Method method) {

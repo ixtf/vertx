@@ -8,7 +8,7 @@ import java.util.Set;
 /**
  * @author jzb 2019-02-28
  */
-public class RouteResolver extends JaxRsRouteResolver {
+public class TestRouteResolver extends JaxRsRouteResolver {
     @Override
     protected Set<String> getPackages() {
         return null;
@@ -16,7 +16,8 @@ public class RouteResolver extends JaxRsRouteResolver {
 
     @Override
     protected Set<Class> getClasses() {
-        return Sets.newHashSet(TestResource.class);
+//        return Sets.newHashSet(IRestImpl.class);
+        return Sets.newHashSet(TestResource.class,IRest.class);
     }
 
 }

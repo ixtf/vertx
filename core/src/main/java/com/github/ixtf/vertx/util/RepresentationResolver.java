@@ -1,4 +1,4 @@
-package com.github.ixtf.vertx;
+package com.github.ixtf.vertx.util;
 
 import com.github.ixtf.japp.core.J;
 import com.google.common.collect.ImmutableSet;
@@ -6,7 +6,6 @@ import com.google.common.reflect.ClassPath;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.ws.rs.Path;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -19,7 +18,7 @@ public abstract class RepresentationResolver<T> {
 
     protected abstract Set<Class> getClasses();
 
-    protected abstract Stream<? extends T> resolve();
+    public abstract Stream<? extends T> resolve();
 
     protected Stream<Class> classes() {
         final Collection<String> excludePrefixes = ImmutableSet.of("java.", "javax.", "com.sun.");
@@ -27,10 +26,7 @@ public abstract class RepresentationResolver<T> {
                 .map(classPath()::getTopLevelClassesRecursive)
                 .flatMap(Collection::parallelStream)
                 .map(ClassPath.ClassInfo::load);
-        return Stream.concat(packageStream, J.emptyIfNull(getClasses()).parallelStream()).filter(clazz -> {
-            if (clazz.getAnnotation(Path.class) == null) {
-                return false;
-            }
+        return Stream.concat(packageStream, J.emptyIfNull(getClasses()).parallelStream()).parallel().distinct().filter(clazz -> {
             final String packageName = clazz.getPackageName();
             for (String prefix : excludePrefixes) {
                 if (StringUtils.startsWith(packageName, prefix)) {

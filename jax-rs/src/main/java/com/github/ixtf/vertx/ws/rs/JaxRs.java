@@ -7,10 +7,15 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.lang.reflect.Method;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
+
+import static java.util.stream.Collectors.toSet;
 
 /**
  * @author jzb 2019-02-20
@@ -76,7 +81,7 @@ public final class JaxRs {
 
     public static String getPath(Class<?> clazz) {
         final Path annotation = clazz.getAnnotation(Path.class);
-        return Optional.of(annotation)
+        return Optional.ofNullable(annotation)
                 .map(Path::value)
                 .map(J::deleteWhitespace)
                 .orElse("");
@@ -84,7 +89,7 @@ public final class JaxRs {
 
     public static String getPath(Method method) {
         final Path annotation = method.getAnnotation(Path.class);
-        return Optional.of(annotation)
+        return Optional.ofNullable(annotation)
                 .map(Path::value)
                 .map(J::deleteWhitespace)
                 .orElse("");
@@ -120,6 +125,15 @@ public final class JaxRs {
                 .map(Produces::value)
                 .filter(ArrayUtils::isNotEmpty)
                 .orElse(new String[0]);
+    }
+
+    public static Stream<Class> resourceStream(Class clazz) {
+        final Class[] interfaces = ArrayUtils.nullToEmpty(clazz.getInterfaces());
+        final Collection<Class> resouceClasses = Arrays.stream(interfaces).parallel().filter(resourceFilter()).collect(toSet());
+        if (J.nonEmpty(resouceClasses)) {
+            return resouceClasses.parallelStream();
+        }
+        return Stream.of(clazz).parallel();
     }
 
     public static Predicate<Class> resourceFilter() {

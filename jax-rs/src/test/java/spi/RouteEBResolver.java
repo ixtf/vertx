@@ -18,7 +18,7 @@ public class RouteEBResolver extends JaxRsRouteEBResolver {
 
     @Override
     protected Set<Class> getClasses() {
-        return Sets.newHashSet(TestResource.class);
+        return Sets.newHashSet(TestResource.class,IRest.class);
     }
 
     @Override
