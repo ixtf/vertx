@@ -9,7 +9,7 @@ allprojects {
     apply plugin: 'idea'
     apply plugin: 'maven'
     apply plugin: 'maven-publish'
-    apply plugin: "io.spring.dependency-management"
+    apply plugin: 'io.spring.dependency-management'
 
     repositories {
         mavenLocal()
@@ -35,29 +35,28 @@ subprojects {
     }
 
     dependencies {
-        compile "com.github.ixtf.japp:codec",
-                "io.vertx:vertx-rx-java2",
-                "io.vertx:vertx-hazelcast",
-                "io.vertx:vertx-reactive-streams",
-                "io.vertx:vertx-web",
-                "io.vertx:vertx-config-yaml",
-                "io.vertx:vertx-service-discovery",
-                "io.vertx:vertx-circuit-breaker",
-                "io.vertx:vertx-service-proxy",
-                "io.vertx:vertx-health-check",
-                "io.vertx:vertx-dropwizard-metrics",
-                'io.smallrye.reactive:smallrye-reactive-streams-operators:1.0.3',
-                'io.smallrye.reactive:smallrye-reactive-streams-vertx-execution-model:1.0.3',
+        compile 'com.github.ixtf.japp:codec',
+                'io.vertx:vertx-rx-java2',
+                'io.vertx:vertx-hazelcast',
+                'io.vertx:vertx-reactive-streams',
+                'io.vertx:vertx-web',
+                'io.vertx:vertx-config-yaml',
+                'io.vertx:vertx-service-discovery',
+                'io.vertx:vertx-circuit-breaker',
+                'io.vertx:vertx-service-proxy',
+                'io.vertx:vertx-health-check',
+                'io.vertx:vertx-dropwizard-metrics',
+                'io.projectreactor:reactor-core',
 
-                "javax:javaee-api",
-                "org.hibernate.validator:hibernate-validator",
-                "org.glassfish:javax.el"
+                'javax:javaee-api',
+                'org.hibernate.validator:hibernate-validator',
+                'org.glassfish:javax.el'
 
-        compileOnly "io.vertx:vertx-codegen"
+        compileOnly 'io.vertx:vertx-codegen'
 
-        testCompile "org.junit.jupiter:junit-jupiter-engine:5.4.2",
-                "io.vertx:vertx-unit",
-                "io.vertx:vertx-web-client"
+        testCompile 'org.junit.jupiter:junit-jupiter-engine',
+                'io.vertx:vertx-unit',
+                'io.vertx:vertx-web-client'
     }
 
     jar.manifest {
@@ -72,7 +71,7 @@ subprojects {
     }
     [compileJava, compileTestJava].each() {
 //        it.options.compilerArgs += ["-Xlint:all", "-Xlint:-options", "-Xlint:-path"]
-        it.options.encoding = "UTF-8"
+        it.options.encoding = 'UTF-8'
         if (rootProject.hasProperty('failOnWarnings') && rootProject.failOnWarnings.toBoolean()) {
             it.options.compilerArgs += ["-Werror"]
         }

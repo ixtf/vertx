@@ -2,15 +2,13 @@ package com.github.ixtf.vertx;
 
 import com.github.ixtf.japp.core.Constant;
 import com.github.ixtf.japp.core.J;
-import com.github.ixtf.japp.core.exception.JException;
-import com.github.ixtf.japp.core.exception.JMultiException;
+import com.github.ixtf.japp.core.exception.JError;
 import com.github.ixtf.vertx.util.CorsConfig;
 import com.github.ixtf.vertx.util.RepresentationResolver;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.core.http.HttpServerResponse;
 import io.vertx.reactivex.ext.web.Router;
@@ -21,15 +19,16 @@ import lombok.SneakyThrows;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
+import javax.validation.*;
 import javax.validation.executable.ExecutableValidator;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
@@ -101,19 +100,8 @@ public final class Jvertx {
         final Throwable failure = rc.failure();
         final JsonObject result = new JsonObject();
         // todo response content-type 为 json
-        if (failure instanceof JMultiException) {
-            final JMultiException ex = (JMultiException) failure;
-            final JsonArray errors = new JsonArray();
-            result.put("errorCode", Constant.ErrorCode.MULTI)
-                    .put("errors", errors);
-            ex.getExceptions().forEach(it -> {
-                final JsonObject error = new JsonObject()
-                        .put("errorCode", it.getErrorCode())
-                        .put("errorMessage", it.getMessage());
-                errors.add(error);
-            });
-        } else if (failure instanceof JException) {
-            final JException ex = (JException) failure;
+        if (failure instanceof JError) {
+            final JError ex = (JError) failure;
             result.put("errorCode", ex.getErrorCode())
                     .put("errorMessage", ex.getMessage());
         } else {
@@ -159,7 +147,7 @@ public final class Jvertx {
         if (violations.size() == 0) {
             return command;
         }
-        throw violationsException(violations);
+        throw new ConstraintViolationException(violations);
     }
 
     public static Object checkAndInvoke(Object proxy, Method method, Object[] args) throws Exception {
@@ -168,20 +156,15 @@ public final class Jvertx {
         final ExecutableValidator executableValidator = validator.forExecutables();
         final Set<ConstraintViolation<Object>> violations = executableValidator.validateParameters(proxy, method, args);
         if (violations.size() == 0) {
-            return method.invoke(proxy, args);
+            try {
+                return method.invoke(proxy, args);
+            } catch (IllegalAccessException e) {
+                throw e;
+            } catch (InvocationTargetException e) {
+                throw new RuntimeException(e.getTargetException());
+            }
         }
-        throw violationsException(violations);
-    }
-
-    private static <T> Exception violationsException(Set<ConstraintViolation<T>> violations) {
-        final List<JException> exceptions = violations.stream().map(violation -> {
-            final String propertyPath = violation.getPropertyPath().toString();
-            return new JException(Constant.ErrorCode.SYSTEM, propertyPath + ":" + violation.getMessage());
-        }).collect(toList());
-        if (violations.size() == 1) {
-            return exceptions.get(0);
-        }
-        return new JMultiException(exceptions);
+        throw new ConstraintViolationException(violations);
     }
 
     private Jvertx() {

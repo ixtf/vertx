@@ -11,7 +11,10 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.function.Supplier;
+
+import static io.vertx.core.http.HttpMethod.*;
 
 /**
  * @author jzb 2019-02-14
@@ -36,6 +39,7 @@ public abstract class RouteRepresentation {
     protected final Supplier<DeliveryOptions> deliveryOptionsSupplier;
 
     protected RouteRepresentation(Method method, HttpMethod httpMethod, String path, String[] consumes, String[] produces, String address) {
+        method.setAccessible(true);
         this.method = method;
         this.httpMethod = httpMethod;
         this.path = path;
@@ -57,8 +61,12 @@ public abstract class RouteRepresentation {
 
     public void router(Router router) {
         final Route route = router.route(httpMethod, path);
-        if (ArrayUtils.isNotEmpty(consumes)) {
-            Arrays.stream(consumes).forEach(route::consumes);
+        if (Objects.equals(PUT, httpMethod) ||
+                Objects.equals(POST, httpMethod) ||
+                Objects.equals(PATCH, httpMethod)) {
+            if (ArrayUtils.isNotEmpty(consumes)) {
+                Arrays.stream(consumes).forEach(route::consumes);
+            }
         }
         if (ArrayUtils.isNotEmpty(produces)) {
             Arrays.stream(produces).forEach(route::produces);

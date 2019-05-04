@@ -1,7 +1,7 @@
 package com.github.ixtf.vertx.ws.rs;
 
-import com.github.ixtf.vertx.util.RepresentationResolver;
 import com.github.ixtf.vertx.route.RouteEBRepresentation;
+import com.github.ixtf.vertx.util.RepresentationResolver;
 import lombok.extern.slf4j.Slf4j;
 
 import java.lang.reflect.Method;
@@ -27,4 +27,5 @@ public abstract class JaxRsRouteEBResolver extends RepresentationResolver<RouteE
     }
 
     protected abstract Object getProxy(Class<?> clazz);
+
 }

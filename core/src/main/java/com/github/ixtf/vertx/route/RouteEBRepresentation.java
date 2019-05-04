@@ -1,6 +1,7 @@
 package com.github.ixtf.vertx.route;
 
 import com.github.ixtf.vertx.Jvertx;
+import io.reactivex.Completable;
 import io.reactivex.Single;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
@@ -42,15 +43,16 @@ public class RouteEBRepresentation extends RouteRepresentation {
         this(route.method, route.httpMethod, route.path, route.consumes, route.produces, route.address, proxy);
     }
 
-    public void consumer(Vertx vertx) {
-        vertx.eventBus().<JsonObject>consumer(address, reply -> Single.just(reply.body()).map(RCEnvelope::new).map(envelope -> {
+    public Completable consumer(Vertx vertx) {
+        return vertx.eventBus().<JsonObject>consumer(address, reply -> Single.fromCallable(() -> {
+            final RCEnvelope envelope = new RCEnvelope(reply);
             final Object[] args = argsFun.apply(envelope);
             final Object ret = Jvertx.checkAndInvoke(proxy, method, args);
             return RCReplyEnvelope.create(reply, envelope, ret);
         }).subscribe(RCReplyEnvelope::reply, err -> {
             log.error("", err);
             reply.fail(400, err.getLocalizedMessage());
-        }));
+        })).rxCompletionHandler();
     }
 
 }

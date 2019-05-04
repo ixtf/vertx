@@ -8,12 +8,15 @@ import io.reactivex.Single;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.core.eventbus.Message;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.Future;
 
 import static com.github.ixtf.japp.core.Constant.MAPPER;
 
@@ -39,13 +42,17 @@ abstract class RCReplyEnvelope {
     }
 
     static RCReplyEnvelope create(Message reply, RCEnvelope rcEnvelope, Object ret) throws Exception {
+        if (ret instanceof Mono) {
+            final Mono mono = (Mono) ret;
+            return new RCReplyEnvelope_Mono(reply, rcEnvelope, mono);
+        }
+        if (ret instanceof Flux) {
+            final Flux flux = (Flux) ret;
+            return new RCReplyEnvelope_Mono(reply, rcEnvelope, flux.collectList());
+        }
         if (ret instanceof CompletionStage) {
             final CompletionStage completionStage = (CompletionStage) ret;
-            return new RCReplyEnvelope_CompletionStage(reply, rcEnvelope, completionStage);
-        }
-        if (ret instanceof Future) {
-            final Future future = (Future) ret;
-            return RCReplyEnvelope.create(reply, rcEnvelope, future.get());
+            return new RCReplyEnvelope_Mono(reply, rcEnvelope, Mono.fromCompletionStage(completionStage));
         }
         if (ret instanceof Completable) {
             final Completable completable = (Completable) ret;
@@ -66,9 +73,14 @@ abstract class RCReplyEnvelope {
         return new RCReplyEnvelope_Default(reply, rcEnvelope, ret);
     }
 
-    protected Object toMessage(Object data) throws Exception {
+    @SneakyThrows
+    protected Object toMessage(Object data) {
         if (data == null || data instanceof String || data instanceof byte[]) {
             return data;
+        }
+        if (data instanceof Buffer) {
+            final Buffer buffer = (Buffer) data;
+            return buffer.getBytes();
         }
         if (data instanceof Envelope) {
             final Envelope envelope = (Envelope) data;
@@ -121,6 +133,23 @@ abstract class RCReplyEnvelope {
         }
     }
 
+    private static class RCReplyEnvelope_Mono extends RCReplyEnvelope {
+        private final Mono<?> mono;
+
+        private RCReplyEnvelope_Mono(Message reply, RCEnvelope rcEnvelope, Mono<?> mono) {
+            super(reply, rcEnvelope);
+            this.mono = mono;
+        }
+
+        @Override
+        void reply() {
+            mono.map(this::toMessage)
+                    .doOnSuccess(it -> reply.reply(it, deliveryOptions))
+                    .doOnError(this::reply)
+                    .subscribe();
+        }
+    }
+
     private static class RCReplyEnvelope_Default extends RCReplyEnvelope {
         private final Object message;
 
@@ -132,31 +161,6 @@ abstract class RCReplyEnvelope {
         @Override
         void reply() {
             reply.reply(message, deliveryOptions);
-        }
-    }
-
-    private static class RCReplyEnvelope_CompletionStage extends RCReplyEnvelope {
-        private final CompletionStage<?> completionStage;
-
-        public RCReplyEnvelope_CompletionStage(Message reply, RCEnvelope rcEnvelope, CompletionStage completionStage) {
-            super(reply, rcEnvelope);
-            this.completionStage = completionStage;
-        }
-
-        @Override
-        void reply() {
-            completionStage.whenComplete((it, err) -> {
-                if (err != null) {
-                    reply(err);
-                } else {
-                    try {
-                        final Object message = toMessage(it);
-                        reply.reply(message, deliveryOptions);
-                    } catch (Exception e) {
-                        reply(e);
-                    }
-                }
-            });
         }
     }
 }

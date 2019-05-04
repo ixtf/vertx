@@ -3,7 +3,8 @@ plugins {
 }
 
 dependencies {
-    compile project(':jax-rs')
+    compile project(':jax-rs'),
+            'com.github.ixtf.persistence:mongo'
     compile group: 'io.swagger.core.v3', name: 'swagger-annotations', version: '2.0.8'
 }
 

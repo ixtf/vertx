@@ -1,5 +1,6 @@
 package com.github.ixtf.vertx.route;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.github.ixtf.japp.core.J;
 import com.github.ixtf.vertx.Jvertx;
 import com.sun.security.auth.UserPrincipal;
@@ -8,6 +9,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.reactivex.core.MultiMap;
 import io.vertx.reactivex.core.buffer.Buffer;
+import io.vertx.reactivex.core.eventbus.Message;
 import io.vertx.reactivex.core.http.HttpServerResponse;
 import io.vertx.reactivex.ext.auth.User;
 import io.vertx.reactivex.ext.web.RoutingContext;
@@ -15,6 +17,7 @@ import io.vertx.reactivex.ext.web.RoutingContext;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import java.io.IOException;
 import java.lang.reflect.Parameter;
 import java.security.Principal;
 import java.util.List;
@@ -22,6 +25,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
+import static com.github.ixtf.japp.core.Constant.MAPPER;
 import static java.util.stream.Collectors.toMap;
 
 /**
@@ -30,8 +34,8 @@ import static java.util.stream.Collectors.toMap;
 class RCEnvelope {
     private final JsonObject jsonObject;
 
-    RCEnvelope(JsonObject jsonObject) {
-        this.jsonObject = jsonObject;
+    RCEnvelope(Message<JsonObject> reply) {
+        jsonObject = reply.body();
     }
 
     private static JsonObject SendMessage(RoutingContext rc) {
@@ -98,6 +102,21 @@ class RCEnvelope {
 
         if (String.class == parameterType) {
             return envelope -> envelope.body();
+        }
+        if (JsonObject.class == parameterType) {
+            return envelope -> new JsonObject(envelope.body());
+        }
+        if (JsonArray.class == parameterType) {
+            return envelope -> new JsonArray(envelope.body());
+        }
+        if (JsonNode.class == parameterType) {
+            return envelope -> {
+                try {
+                    return MAPPER.readValue(envelope.body(), JsonNode.class);
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            };
         }
         return envelope -> Jvertx.checkAndGetCommand(parameterType, envelope.body());
     }
