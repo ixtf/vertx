@@ -8,13 +8,11 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Optional;
+import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
-import static java.util.stream.Collectors.toSet;
 
 /**
  * @author jzb 2019-02-20
@@ -126,13 +124,13 @@ public final class JaxRs {
                 .orElse(new String[0]);
     }
 
-    public static Stream<Class> resourceStream(Class clazz) {
-        final Class[] interfaces = ArrayUtils.nullToEmpty(clazz.getInterfaces());
-        final Collection<Class> resouceClasses = Arrays.stream(interfaces).parallel().collect(toSet());
-        if (J.nonEmpty(resouceClasses)) {
-            return resouceClasses.parallelStream();
-        }
-        return Stream.of(clazz).parallel();
+    static Predicate<Class> resourceFilter() {
+        return clazz -> clazz.getAnnotation(Path.class) != null;
+    }
+
+    static Stream<Class> resourceStream(Class clazz) {
+        final Class[] interfaces = clazz.getInterfaces();
+        return ArrayUtils.isEmpty(interfaces) ? Stream.of(clazz) : Arrays.stream(interfaces);
     }
 
 }

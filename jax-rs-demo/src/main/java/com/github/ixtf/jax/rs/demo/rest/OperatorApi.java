@@ -28,6 +28,7 @@ public interface OperatorApi {
     @POST
     Operator create(OperatorCreateCommand command);
 
+    //    @Apm
     @GET
     Map list(@QueryParam("first") @Min(0) int first,
              @QueryParam("pageSize") @DefaultValue("50") @Min(1) @Max(1000) int limit);

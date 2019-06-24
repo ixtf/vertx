@@ -16,6 +16,7 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 import static com.github.ixtf.vertx.Jvertx.REQUEST_METHOD;
@@ -27,8 +28,6 @@ import static io.vertx.core.http.HttpMethod.*;
  */
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 public abstract class RouteRepresentation {
-    @Getter
-    protected final Method method;
     @EqualsAndHashCode.Include
     @Getter
     protected final HttpMethod httpMethod;
@@ -36,13 +35,16 @@ public abstract class RouteRepresentation {
     @Getter
     protected final String path;
     @Getter
-    protected final String[] consumes;
-    @Getter
-    protected final String[] produces;
-    @Getter
     protected final String address;
     @Getter
     protected final Supplier<DeliveryOptions> deliveryOptionsSupplier;
+
+    @Getter
+    protected final Method method;
+    @Getter
+    protected final String[] consumes;
+    @Getter
+    protected final String[] produces;
 
     protected RouteRepresentation(Method method, HttpMethod httpMethod, String path, String[] consumes, String[] produces, String address) {
         this.method = method;
@@ -51,17 +53,23 @@ public abstract class RouteRepresentation {
         this.consumes = consumes;
         this.produces = produces;
         this.address = address;
+        this.deliveryOptionsSupplier = deliveryOptionsSupplier();
+    }
 
-        final VertxDelivery vertxDelivery = method.getAnnotation(VertxDelivery.class);
-        if (vertxDelivery == null) {
-            deliveryOptionsSupplier = () -> new DeliveryOptions();
-        } else {
-            final long timeout = vertxDelivery.timeout();
-            deliveryOptionsSupplier = () -> {
-                final DeliveryOptions deliveryOptions = new DeliveryOptions();
-                return deliveryOptions.setSendTimeout(timeout);
-            };
-        }
+    private Supplier<DeliveryOptions> deliveryOptionsSupplier() {
+        final VertxDelivery vertxDelivery = Optional.ofNullable(method.getAnnotation(VertxDelivery.class)).orElseGet(() -> {
+            final Class<?> declaringClass = method.getDeclaringClass();
+            return declaringClass.getAnnotation(VertxDelivery.class);
+        });
+        return vertxDelivery != null ? deliveryOptionsSupplier(vertxDelivery) : () -> new DeliveryOptions();
+    }
+
+    private Supplier<DeliveryOptions> deliveryOptionsSupplier(VertxDelivery vertxDelivery) {
+        final long timeout = vertxDelivery.timeout();
+        return () -> {
+            final DeliveryOptions deliveryOptions = new DeliveryOptions();
+            return deliveryOptions.setSendTimeout(timeout);
+        };
     }
 
     public void router(Router router) {

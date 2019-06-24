@@ -16,7 +16,6 @@ public abstract class JaxRsRouteEBResolver extends RepresentationResolver<RouteE
     public Stream<? extends RouteEBRepresentation> resolve() {
         return classStream().flatMap(JaxRs::resourceStream).filter(JaxRs.resourceFilter())
                 .collect(toSet()).parallelStream()
-                .filter(it -> !it.isInterface())
                 .map(JaxRsResource::new)
                 .flatMap(JaxRsResource::routes)
                 .map(it -> JaxRsRouteEB.create(it, this::getProxy));
