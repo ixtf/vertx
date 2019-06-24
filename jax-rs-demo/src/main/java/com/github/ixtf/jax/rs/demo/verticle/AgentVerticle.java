@@ -18,16 +18,11 @@ import java.util.Set;
 public class AgentVerticle extends AbstractVerticle {
     @Override
     public Completable rxStart() {
-        final Router router = Router.router(vertx);
-        Jvertx.enableCommon(router);
-        Jvertx.enableCors(router, new CorsConfig());
-        router.route().failureHandler(Jvertx::failureHandler);
+        final Router router = Jvertx.router(vertx, new CorsConfig());
 
-        router.get("/test").handler(rc -> {
-            vertx.eventBus().<String>rxSend("test", null)
-                    .map(Message::body)
-                    .subscribe(rc.response()::end, rc::fail);
-        });
+        router.get("/test").handler(rc -> vertx.eventBus().<String>rxSend("test", null)
+                .map(Message::body)
+                .subscribe(rc.response()::end, rc::fail));
 
         Jvertx.resolve(AgentResolver.class).forEach(it -> it.router(router));
         final HttpServerOptions httpServerOptions = new HttpServerOptions()

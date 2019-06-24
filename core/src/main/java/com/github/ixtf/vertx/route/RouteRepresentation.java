@@ -1,6 +1,7 @@
 package com.github.ixtf.vertx.route;
 
 import com.github.ixtf.vertx.VertxDelivery;
+import com.google.common.collect.ImmutableSet;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.reactivex.ext.web.Route;
@@ -11,7 +12,6 @@ import org.apache.commons.lang3.ArrayUtils;
 
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.function.Supplier;
 
 import static io.vertx.core.http.HttpMethod.*;
@@ -39,7 +39,6 @@ public abstract class RouteRepresentation {
     protected final Supplier<DeliveryOptions> deliveryOptionsSupplier;
 
     protected RouteRepresentation(Method method, HttpMethod httpMethod, String path, String[] consumes, String[] produces, String address) {
-        method.setAccessible(true);
         this.method = method;
         this.httpMethod = httpMethod;
         this.path = path;
@@ -61,10 +60,8 @@ public abstract class RouteRepresentation {
 
     public void router(Router router) {
         final Route route = router.route(httpMethod, path);
-        if (Objects.equals(PUT, httpMethod) ||
-                Objects.equals(POST, httpMethod) ||
-                Objects.equals(PATCH, httpMethod)) {
-            if (ArrayUtils.isNotEmpty(consumes)) {
+        if (ArrayUtils.isNotEmpty(consumes)) {
+            if (ImmutableSet.of(POST, PUT, PATCH).contains(httpMethod)) {
                 Arrays.stream(consumes).forEach(route::consumes);
             }
         }

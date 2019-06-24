@@ -13,6 +13,7 @@ import io.vertx.reactivex.core.eventbus.Message;
 import io.vertx.reactivex.core.http.HttpServerResponse;
 import io.vertx.reactivex.ext.auth.User;
 import io.vertx.reactivex.ext.web.RoutingContext;
+import org.apache.commons.lang3.math.NumberUtils;
 
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.PathParam;
@@ -134,35 +135,35 @@ class RCEnvelope {
         }
 
         if (int.class.isAssignableFrom(parameterType)) {
-            return it -> J.isBlank(it) ? (int) 0 : Integer.valueOf(it).intValue();
+            return it -> NumberUtils.toInt(it);
         }
         if (Integer.class.isAssignableFrom(parameterType)) {
             return it -> J.isBlank(it) ? null : Integer.valueOf(it);
         }
 
         if (float.class.isAssignableFrom(parameterType)) {
-            return it -> J.isBlank(it) ? (float) 0 : Float.valueOf(it).floatValue();
+            return it -> NumberUtils.toFloat(it);
         }
         if (Float.class.isAssignableFrom(parameterType)) {
             return it -> J.isBlank(it) ? null : Float.valueOf(it);
         }
 
         if (double.class.isAssignableFrom(parameterType)) {
-            return it -> J.isBlank(it) ? (double) 0 : Double.valueOf(it).doubleValue();
+            return it -> NumberUtils.toDouble(it);
         }
         if (Double.class.isAssignableFrom(parameterType)) {
             return it -> J.isBlank(it) ? null : Double.valueOf(it);
         }
 
         if (short.class.isAssignableFrom(parameterType)) {
-            return it -> J.isBlank(it) ? (short) 0 : Short.valueOf(it).shortValue();
+            return it -> NumberUtils.toShort(it);
         }
         if (Short.class.isAssignableFrom(parameterType)) {
             return it -> J.isBlank(it) ? null : Short.valueOf(it);
         }
 
         if (byte.class.isAssignableFrom(parameterType)) {
-            return it -> J.isBlank(it) ? (byte) 0 : Byte.valueOf(it).byteValue();
+            return it -> NumberUtils.toByte(it);
         }
         if (Byte.class.isAssignableFrom(parameterType)) {
             return it -> J.isBlank(it) ? null : Byte.valueOf(it);

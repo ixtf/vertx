@@ -39,14 +39,14 @@ public abstract class RepresentationResolver<T> {
     }
 
     @SneakyThrows
-    protected synchronized ClassPath classPath() {
+    synchronized protected ClassPath classPath() {
         if (classPath == null) {
             classPath = ClassPath.from(classLoader());
         }
         return classPath;
     }
 
-    protected synchronized ClassLoader classLoader() {
+    synchronized protected ClassLoader classLoader() {
         if (classLoader == null) {
             classLoader = Thread.currentThread().getContextClassLoader();
         }

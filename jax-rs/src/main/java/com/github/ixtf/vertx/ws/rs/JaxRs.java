@@ -137,6 +137,8 @@ public final class JaxRs {
     }
 
     public static Predicate<Class> resourceFilter() {
-        return clazz -> clazz.getAnnotation(Path.class) != null;
+        return clazz -> {
+            return clazz.getAnnotation(Path.class) != null;
+        };
     }
 }

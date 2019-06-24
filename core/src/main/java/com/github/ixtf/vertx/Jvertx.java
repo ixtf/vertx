@@ -8,13 +8,17 @@ import com.github.ixtf.vertx.util.RepresentationResolver;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
+import io.vertx.reactivex.core.Vertx;
 import io.vertx.reactivex.core.http.HttpServerResponse;
 import io.vertx.reactivex.ext.web.Router;
 import io.vertx.reactivex.ext.web.RoutingContext;
-import io.vertx.reactivex.ext.web.handler.*;
-import io.vertx.reactivex.ext.web.sstore.SessionStore;
+import io.vertx.reactivex.ext.web.handler.BodyHandler;
+import io.vertx.reactivex.ext.web.handler.CookieHandler;
+import io.vertx.reactivex.ext.web.handler.CorsHandler;
+import io.vertx.reactivex.ext.web.handler.ResponseContentTypeHandler;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -63,18 +67,15 @@ public final class Jvertx {
         });
     }
 
-    public static void enableCommon(Router router) {
+    public static Router router(Vertx vertx, CorsConfig corsConfig) {
+        return router(vertx, corsConfig, Jvertx::failureHandler);
+    }
+
+    public static Router router(Vertx vertx, CorsConfig corsConfig, Handler<RoutingContext> failureHandler) {
+        final Router router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
         router.route().handler(ResponseContentTypeHandler.create());
         router.route().handler(CookieHandler.create());
-    }
-
-    public static void enableCommon(Router router, SessionStore sessionStore) {
-        enableCommon(router);
-        router.route().handler(SessionHandler.create(sessionStore));
-    }
-
-    public static void enableCors(Router router, CorsConfig corsConfig) {
         final String domainP = Stream.concat(
                 Stream.of("localhost", "127\\.0\\.0\\.1").parallel(),
                 J.emptyIfNull(corsConfig.getDomainPatterns()).parallelStream()
@@ -93,6 +94,8 @@ public final class Jvertx {
                 .allowedMethod(HttpMethod.DELETE)
                 .allowedMethod(HttpMethod.HEAD)
                 .allowedMethod(HttpMethod.OPTIONS));
+        router.route().failureHandler(failureHandler);
+        return router;
     }
 
     public static void failureHandler(RoutingContext rc) {
