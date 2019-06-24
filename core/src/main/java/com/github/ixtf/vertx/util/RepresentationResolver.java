@@ -28,7 +28,7 @@ public abstract class RepresentationResolver<T> {
                 .flatMap(Collection::parallelStream)
                 .map(ClassPath.ClassInfo::load);
         return Stream.concat(packageStream, J.emptyIfNull(getClasses()).parallelStream()).parallel().distinct().filter(clazz -> {
-            final String packageName = clazz.getPackageName();
+            final String packageName = clazz.getPackage().getName();
             for (String prefix : excludePrefixes) {
                 if (StringUtils.startsWith(packageName, prefix)) {
                     return false;
