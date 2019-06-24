@@ -21,21 +21,24 @@ public abstract class RepresentationResolver<T> {
 
     public abstract Stream<? extends T> resolve();
 
-    protected Stream<Class> classes() {
+    protected Stream<Class> classStream() {
         final Collection<String> excludePrefixes = ImmutableSet.of("java.", "javax.", "com.sun.");
-        final var packageStream = J.emptyIfNull(getPackages()).parallelStream()
+        final Stream<? extends Class<?>> packageStream = J.emptyIfNull(getPackages()).parallelStream()
                 .map(classPath()::getTopLevelClassesRecursive)
                 .flatMap(Collection::parallelStream)
                 .map(ClassPath.ClassInfo::load);
-        return Stream.concat(packageStream, J.emptyIfNull(getClasses()).parallelStream()).parallel().distinct().filter(clazz -> {
-            final String packageName = clazz.getPackage().getName();
-            for (String prefix : excludePrefixes) {
-                if (StringUtils.startsWith(packageName, prefix)) {
-                    return false;
-                }
-            }
-            return true;
-        }).filter(classFilter());
+        return Stream.concat(packageStream, J.emptyIfNull(getClasses()).parallelStream()).parallel()
+                .distinct()
+                .filter(clazz -> {
+                    final String packageName = clazz.getPackage().getName();
+                    for (String prefix : excludePrefixes) {
+                        if (StringUtils.startsWith(packageName, prefix)) {
+                            return false;
+                        }
+                    }
+                    return true;
+                })
+                .filter(classFilter());
     }
 
     @SneakyThrows

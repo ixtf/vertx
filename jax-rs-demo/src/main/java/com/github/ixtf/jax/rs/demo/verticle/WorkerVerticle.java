@@ -4,7 +4,7 @@ import com.github.ixtf.jax.rs.demo.domain.Operator;
 import com.github.ixtf.persistence.mongo.Jmongo;
 import com.github.ixtf.vertx.Jvertx;
 import com.github.ixtf.vertx.ws.rs.JaxRsRouteEBResolver;
-import com.google.common.collect.Sets;
+import com.google.common.collect.ImmutableSet;
 import io.reactivex.Completable;
 import io.vertx.reactivex.core.AbstractVerticle;
 
@@ -57,7 +57,7 @@ public class WorkerVerticle extends AbstractVerticle {
 
         @Override
         protected Set<String> getPackages() {
-            return Sets.newHashSet("com.github.ixtf.jax.rs.demo");
+            return ImmutableSet.of("com.github.ixtf.jax.rs.demo.rest");
         }
 
         @Override

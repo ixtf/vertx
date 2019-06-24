@@ -10,7 +10,6 @@ import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
@@ -129,16 +128,11 @@ public final class JaxRs {
 
     public static Stream<Class> resourceStream(Class clazz) {
         final Class[] interfaces = ArrayUtils.nullToEmpty(clazz.getInterfaces());
-        final Collection<Class> resouceClasses = Arrays.stream(interfaces).parallel().filter(resourceFilter()).collect(toSet());
+        final Collection<Class> resouceClasses = Arrays.stream(interfaces).parallel().collect(toSet());
         if (J.nonEmpty(resouceClasses)) {
             return resouceClasses.parallelStream();
         }
         return Stream.of(clazz).parallel();
     }
 
-    public static Predicate<Class> resourceFilter() {
-        return clazz -> {
-            return clazz.getAnnotation(Path.class) != null;
-        };
-    }
 }

@@ -5,14 +5,19 @@ import io.reactivex.Completable;
 import io.reactivex.Single;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
+import io.vertx.reactivex.core.MultiMap;
 import io.vertx.reactivex.core.Vertx;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.ArrayUtils;
 
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.Arrays;
 import java.util.function.Function;
+
+import static com.github.ixtf.vertx.Jvertx.REQUEST_METHOD;
+import static com.github.ixtf.vertx.Jvertx.REQUEST_PATH;
 
 /**
  * @author jzb 2019-02-14
@@ -28,7 +33,7 @@ public class RouteEBRepresentation extends RouteRepresentation {
         this.proxy = proxy;
 
         final Parameter[] parameters = method.getParameters();
-        if (parameters == null || parameters.length == 0) {
+        if (ArrayUtils.isEmpty(parameters)) {
             argsFun = envelope -> new Object[0];
         } else {
             final Function<RCEnvelope, ? extends Object>[] argFuns = new Function[parameters.length];
@@ -50,7 +55,8 @@ public class RouteEBRepresentation extends RouteRepresentation {
             final Object ret = Jvertx.checkAndInvoke(proxy, method, args);
             return RCReplyEnvelope.create(reply, envelope, ret);
         }).subscribe(RCReplyEnvelope::reply, err -> {
-            log.error("", err);
+            final MultiMap headers = reply.headers();
+            log.error(headers.get(REQUEST_METHOD) + ":" + headers.get(REQUEST_PATH), err);
             reply.fail(400, err.getLocalizedMessage());
         })).rxCompletionHandler();
     }

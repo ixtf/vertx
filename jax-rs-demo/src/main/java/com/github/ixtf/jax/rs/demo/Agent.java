@@ -10,6 +10,8 @@ import io.vertx.reactivex.core.Vertx;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
+import static com.github.ixtf.jax.rs.demo.DemoModule.INJECTOR;
+
 /**
  * @author jzb 2019-05-02
  */
@@ -17,7 +19,7 @@ public class Agent {
 
     public static void main(String[] args) {
         Vertx.rxClusteredVertx(vertxOptions()).flatMapCompletable(vertx -> {
-            DemoModule.INJECTOR = Guice.createInjector(new DemoModule(vertx));
+            INJECTOR = Guice.createInjector(new DemoModule(vertx));
 
             return Completable.mergeArray(
                     vertx.rxDeployVerticle(AgentVerticle.class.getName()).ignoreElement()
@@ -28,8 +30,7 @@ public class Agent {
     private static VertxOptions vertxOptions() {
         final VertxOptions vertxOptions = new VertxOptions()
                 .setMaxEventLoopExecuteTime(TimeUnit.SECONDS.toNanos(10));
-        Optional.ofNullable(System.getProperty("vertx.cluster.host"))
-                .filter(J::nonBlank)
+        Optional.ofNullable(System.getProperty("vertx.cluster.host")).filter(J::nonBlank)
                 .ifPresent(vertxOptions.getEventBusOptions()::setHost);
         return vertxOptions;
     }

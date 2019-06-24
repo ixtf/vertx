@@ -4,13 +4,11 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.github.ixtf.japp.core.J;
 import com.github.ixtf.vertx.Jvertx;
 import com.sun.security.auth.UserPrincipal;
+import io.reactivex.Single;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.reactivex.core.MultiMap;
-import io.vertx.reactivex.core.buffer.Buffer;
 import io.vertx.reactivex.core.eventbus.Message;
-import io.vertx.reactivex.core.http.HttpServerResponse;
 import io.vertx.reactivex.ext.auth.User;
 import io.vertx.reactivex.ext.web.RoutingContext;
 import org.apache.commons.lang3.math.NumberUtils;
@@ -35,41 +33,52 @@ import static java.util.stream.Collectors.toMap;
 class RCEnvelope {
     private final JsonObject jsonObject;
 
-    RCEnvelope(Message<JsonObject> reply) {
-        jsonObject = reply.body();
-    }
-
-    private static JsonObject SendMessage(RoutingContext rc) {
+    private RCEnvelope(RoutingContext rc) {
         final JsonObject principal = Optional.ofNullable(rc.user()).map(User::principal).orElse(null);
         final Map<String, String> pathParams = rc.pathParams();
         final Map<String, List<String>> queryParams = rc.queryParams().names().parallelStream().collect(toMap(Function.identity(), rc.queryParams()::getAll));
-        return new JsonObject()
-                .put("principal", principal)
+        jsonObject = new JsonObject().put("principal", principal)
                 .put("pathParams", pathParams)
                 .put("queryParams", queryParams)
                 .put("body", rc.getBodyAsString());
     }
 
-    static void send(RoutingContext rc, String address, DeliveryOptions deliveryOptions) {
-        rc.vertx().eventBus().rxSend(address, SendMessage(rc), deliveryOptions).subscribe(reply -> {
-            final HttpServerResponse response = rc.response();
-            final MultiMap headers = reply.headers();
-            headers.entries().forEach(it -> response.putHeader(it.getKey(), it.getValue()));
-            final Object body = reply.body();
-            if (body == null) {
-                response.end();
-            } else if (body instanceof String) {
-                final String result = (String) body;
-                if (J.isBlank(result)) {
-                    response.end();
-                } else {
-                    response.end(result);
-                }
-            } else {
-                final byte[] bytes = (byte[]) body;
-                response.end(Buffer.buffer(bytes));
-            }
-        }, rc::fail);
+    static Single<Message<Object>> rxSend(RoutingContext rc, String address, DeliveryOptions deliveryOptions) {
+        final RCEnvelope rcEnvelope = new RCEnvelope(rc);
+        return rc.vertx().eventBus().rxSend(address, rcEnvelope.jsonObject, deliveryOptions);
+    }
+
+    private JsonObject principal() {
+        return jsonObject.getJsonObject("principal");
+    }
+
+    private String body() {
+        return jsonObject.getString("body", null);
+    }
+
+    private JsonObject pathParams() {
+        return jsonObject.getJsonObject("pathParams");
+    }
+
+    private String pathParam(String key) {
+        return pathParams().getString(key);
+    }
+
+    private JsonObject queryParams() {
+        return jsonObject.getJsonObject("queryParams");
+    }
+
+    private String queryParam(String key, String defaultValue) {
+        final JsonArray jsonArray = queryParams().getJsonArray(key);
+        if (jsonArray == null || jsonArray.isEmpty()) {
+            return defaultValue;
+        }
+        final String result = jsonArray.getString(0);
+        return result == null ? defaultValue : result;
+    }
+
+    RCEnvelope(Message<JsonObject> reply) {
+        jsonObject = reply.body();
     }
 
     static Function<RCEnvelope, ? extends Object> argFun(Parameter parameter) {
@@ -172,32 +181,4 @@ class RCEnvelope {
         throw new UnsupportedOperationException();
     }
 
-    private JsonObject principal() {
-        return jsonObject.getJsonObject("principal");
-    }
-
-    private String body() {
-        return jsonObject.getString("body", null);
-    }
-
-    private JsonObject pathParams() {
-        return jsonObject.getJsonObject("pathParams");
-    }
-
-    private String pathParam(String key) {
-        return pathParams().getString(key);
-    }
-
-    private JsonObject queryParams() {
-        return jsonObject.getJsonObject("queryParams");
-    }
-
-    private String queryParam(String key, String defaultValue) {
-        final JsonArray jsonArray = queryParams().getJsonArray(key);
-        if (jsonArray == null || jsonArray.isEmpty()) {
-            return defaultValue;
-        }
-        final String result = jsonArray.getString(0);
-        return result == null ? defaultValue : result;
-    }
 }
