@@ -22,7 +22,7 @@ public final class JaxRs {
     private JaxRs() {
     }
 
-    public static String vertxPath(String parentPath, String subPath) {
+    static String vertxPath(String parentPath, String subPath) {
         String result = concatePath(parentPath, subPath);
         final Pattern pattern = Pattern.compile("(\\{\\w+\\})", Pattern.DOTALL);
         Matcher m = pattern.matcher(result);
@@ -76,7 +76,7 @@ public final class JaxRs {
         return path;
     }
 
-    public static String getPath(Class<?> clazz) {
+    static String getPath(Class<?> clazz) {
         final Path annotation = clazz.getAnnotation(Path.class);
         return Optional.ofNullable(annotation)
                 .map(Path::value)
@@ -84,7 +84,7 @@ public final class JaxRs {
                 .orElse("");
     }
 
-    public static String getPath(Method method) {
+    static String getPath(Method method) {
         final Path annotation = method.getAnnotation(Path.class);
         return Optional.ofNullable(annotation)
                 .map(Path::value)

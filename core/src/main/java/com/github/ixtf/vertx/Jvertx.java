@@ -3,11 +3,11 @@ package com.github.ixtf.vertx;
 import com.github.ixtf.japp.core.Constant;
 import com.github.ixtf.japp.core.J;
 import com.github.ixtf.japp.core.exception.JError;
-import com.github.ixtf.vertx.util.CorsConfig;
-import com.github.ixtf.vertx.util.RepresentationResolver;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
+import io.jaegertracing.Configuration;
+import io.opentracing.Tracer;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonObject;
@@ -21,11 +21,13 @@ import io.vertx.reactivex.ext.web.handler.CorsHandler;
 import io.vertx.reactivex.ext.web.handler.ResponseContentTypeHandler;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.math.NumberUtils;
+import org.apache.commons.lang3.reflect.MethodUtils;
 
 import javax.validation.*;
 import javax.validation.executable.ExecutableValidator;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -35,6 +37,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.github.ixtf.japp.core.Constant.MAPPER;
@@ -150,29 +153,81 @@ public final class Jvertx {
         final ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
         final Validator validator = validatorFactory.getValidator();
         final Set<ConstraintViolation<Object>> violations = validator.validate(command);
-        if (violations.size() == 0) {
-            return command;
+        if (J.nonEmpty(violations)) {
+            throw new ConstraintViolationException(violations);
         }
-        throw new ConstraintViolationException(violations);
+        return command;
     }
 
-    public static Object checkAndInvoke(Object proxy, Method method, Object[] args) throws Exception {
+    @SneakyThrows
+    public static Object checkAndInvoke(Object proxy, Method method, Object[] args) {
         final ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
         final Validator validator = validatorFactory.getValidator();
         final ExecutableValidator executableValidator = validator.forExecutables();
         final Set<ConstraintViolation<Object>> violations = executableValidator.validateParameters(proxy, method, args);
-        if (violations.size() == 0) {
-            try {
-                return method.invoke(proxy, args);
-            } catch (IllegalAccessException e) {
-                throw e;
-            } catch (InvocationTargetException e) {
-                throw new RuntimeException(e.getTargetException());
-            }
+        if (J.nonEmpty(violations)) {
+            throw new ConstraintViolationException(violations);
         }
-        throw new ConstraintViolationException(violations);
+        return MethodUtils.invokeMethod(proxy, true, method.getName(), args);
     }
 
     private Jvertx() {
+    }
+
+    public static Tracer initTracer(String service) {
+        io.jaegertracing.Configuration.SamplerConfiguration samplerConfig = io.jaegertracing.Configuration.SamplerConfiguration.fromEnv().withType("const").withParam(1);
+        io.jaegertracing.Configuration.ReporterConfiguration reporterConfig = io.jaegertracing.Configuration.ReporterConfiguration.fromEnv().withLogSpans(true);
+        io.jaegertracing.Configuration config = new Configuration(service).withSampler(samplerConfig).withReporter(reporterConfig);
+        return config.getTracer();
+    }
+
+    public static Function<String, ?> paramFun(Class<?> parameterType) {
+        if (String.class.isAssignableFrom(parameterType)) {
+            return Function.identity();
+        }
+
+        if (boolean.class.isAssignableFrom(parameterType)) {
+            return BooleanUtils::toBoolean;
+        }
+        if (Boolean.class.isAssignableFrom(parameterType)) {
+            return BooleanUtils::toBooleanObject;
+        }
+
+        if (int.class.isAssignableFrom(parameterType)) {
+            return NumberUtils::toInt;
+        }
+        if (Integer.class.isAssignableFrom(parameterType)) {
+            return NumberUtils::createInteger;
+        }
+
+        if (float.class.isAssignableFrom(parameterType)) {
+            return NumberUtils::toFloat;
+        }
+        if (Float.class.isAssignableFrom(parameterType)) {
+            return NumberUtils::createFloat;
+        }
+
+        if (double.class.isAssignableFrom(parameterType)) {
+            return NumberUtils::toDouble;
+        }
+        if (Double.class.isAssignableFrom(parameterType)) {
+            return NumberUtils::createDouble;
+        }
+
+        if (short.class.isAssignableFrom(parameterType)) {
+            return NumberUtils::toShort;
+        }
+        if (Short.class.isAssignableFrom(parameterType)) {
+            return it -> J.isBlank(it) ? null : Short.valueOf(it);
+        }
+
+        if (byte.class.isAssignableFrom(parameterType)) {
+            return NumberUtils::toByte;
+        }
+        if (Byte.class.isAssignableFrom(parameterType)) {
+            return it -> J.isBlank(it) ? null : Byte.valueOf(it);
+        }
+
+        throw new UnsupportedOperationException();
     }
 }

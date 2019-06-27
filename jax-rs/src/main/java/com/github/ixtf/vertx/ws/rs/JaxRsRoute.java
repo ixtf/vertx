@@ -3,7 +3,6 @@ package com.github.ixtf.vertx.ws.rs;
 import com.github.ixtf.vertx.route.RouteRepresentation;
 import io.vertx.core.http.HttpMethod;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.ArrayUtils;
 
 import java.lang.reflect.Method;
@@ -14,7 +13,6 @@ import static com.github.ixtf.vertx.Jvertx.API;
 /**
  * @author jzb 2019-02-14
  */
-@Slf4j
 class JaxRsRoute extends RouteRepresentation {
     @Getter
     private final JaxRsResource jaxRsResource;
@@ -25,15 +23,15 @@ class JaxRsRoute extends RouteRepresentation {
     @Getter
     private final String[] jaxRsProduces;
 
-    private JaxRsRoute(Method method, HttpMethod httpMethod, String path, String[] consumes, String[] produces, String address, JaxRsResource jaxRsResource, String jaxRsPath, String[] jaxRsConsumes, String[] jaxRsProduces) {
-        super(method, httpMethod, path, consumes, produces, address);
+    private JaxRsRoute(HttpMethod httpMethod, String path, String address, String[] consumes, String[] produces, JaxRsResource jaxRsResource, Method method, String jaxRsPath, String[] jaxRsConsumes, String[] jaxRsProduces) {
+        super(httpMethod, path, address, consumes, produces, method);
         this.jaxRsResource = jaxRsResource;
         this.jaxRsPath = jaxRsPath;
         this.jaxRsConsumes = jaxRsConsumes;
         this.jaxRsProduces = jaxRsProduces;
     }
 
-    static JaxRsRoute create(JaxRsResource jaxRsResource, Method method, HttpMethod httpMethod) {
+    static JaxRsRoute create(HttpMethod httpMethod, JaxRsResource jaxRsResource, Method method) {
         final String[] jaxRsConsumes = JaxRs.getConsumes(method);
         final String[] consumes = Optional.ofNullable(jaxRsConsumes)
                 .filter(ArrayUtils::isNotEmpty)
@@ -48,7 +46,7 @@ class JaxRsRoute extends RouteRepresentation {
         final String path = JaxRs.vertxPath(jaxRsResource.getJaxRsPath(), jaxRsPath);
 
         final String address = API + ":" + httpMethod.name() + ":" + path;
-        return new JaxRsRoute(method, httpMethod, path, consumes, produces, address, jaxRsResource, jaxRsPath, jaxRsConsumes, jaxRsProduces);
+        return new JaxRsRoute(httpMethod, path, address, consumes, produces, jaxRsResource, method, jaxRsPath, jaxRsConsumes, jaxRsProduces);
     }
 
 }

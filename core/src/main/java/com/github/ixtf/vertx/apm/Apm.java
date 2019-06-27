@@ -1,4 +1,4 @@
-package com.github.ixtf.vertx;
+package com.github.ixtf.vertx.apm;
 
 import java.lang.annotation.*;
 
@@ -10,4 +10,5 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface Apm {
+    String service() default "";
 }

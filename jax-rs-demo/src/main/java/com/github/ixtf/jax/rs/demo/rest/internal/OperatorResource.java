@@ -52,7 +52,7 @@ public class OperatorResource implements OperatorApi {
     }
 
     @Override
-    public Map list(@Min(0) int first, @Min(1) @Max(1000) int limit) {
+    public Mono list(@Min(0) int first, @Min(1) @Max(1000) int limit) {
         final Map<String, Object> map = Maps.newConcurrentMap();
         map.put("first", first);
         map.put("limit", limit);
@@ -62,6 +62,6 @@ public class OperatorResource implements OperatorApi {
         }).map(operators -> {
             map.put("operators", operators);
             return map;
-        }).block();
+        });
     }
 }

@@ -43,8 +43,9 @@ subprojects {
                 "io.vertx:vertx-health-check",
                 "io.vertx:vertx-dropwizard-metrics",
                 'io.projectreactor:reactor-core',
-                'io.opentracing:opentracing-util:0.33.0',
-                'io.opentracing:opentracing-mock:0.33.0',
+//                'io.opentracing:opentracing-util:0.33.0',
+//                'io.opentracing:opentracing-mock:0.33.0',
+                'io.jaegertracing:jaeger-client:0.35.5',
 
                 "javax:javaee-api",
                 "org.hibernate.validator:hibernate-validator",

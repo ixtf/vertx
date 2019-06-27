@@ -1,14 +1,15 @@
 package com.github.ixtf.jax.rs.demo.verticle;
 
+import com.github.ixtf.vertx.CorsConfig;
 import com.github.ixtf.vertx.Jvertx;
-import com.github.ixtf.vertx.util.CorsConfig;
 import com.github.ixtf.vertx.ws.rs.JaxRsRouteResolver;
 import com.google.common.collect.Sets;
 import io.reactivex.Completable;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.reactivex.core.AbstractVerticle;
-import io.vertx.reactivex.core.eventbus.Message;
 import io.vertx.reactivex.ext.web.Router;
+import io.vertx.reactivex.redis.client.Redis;
+import io.vertx.redis.client.RedisOptions;
 
 import java.util.Set;
 
@@ -20,9 +21,17 @@ public class AgentVerticle extends AbstractVerticle {
     public Completable rxStart() {
         final Router router = Jvertx.router(vertx, new CorsConfig());
 
-        router.get("/test").handler(rc -> vertx.eventBus().<String>rxSend("test", null)
-                .map(Message::body)
-                .subscribe(rc.response()::end, rc::fail));
+        final Redis redis = Redis.createClient(vertx, new RedisOptions());
+
+//        router.get("/test").handler(rc -> vertx.eventBus().<String>rxSend("test", null)
+//                .map(Message::body)
+//                .subscribe(rc.response()::end, rc::fail));
+
+        router.get("/test").handler(rc -> {
+            vertx.eventBus().send("test", "test");
+            vertx.eventBus().publish("test", "test");
+            rc.response().end();
+        });
 
         Jvertx.resolve(AgentResolver.class).forEach(it -> it.router(router));
         final HttpServerOptions httpServerOptions = new HttpServerOptions()

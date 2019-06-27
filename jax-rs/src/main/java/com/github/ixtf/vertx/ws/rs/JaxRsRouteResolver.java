@@ -1,7 +1,7 @@
 package com.github.ixtf.vertx.ws.rs;
 
+import com.github.ixtf.vertx.RepresentationResolver;
 import com.github.ixtf.vertx.route.RouteRepresentation;
-import com.github.ixtf.vertx.util.RepresentationResolver;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.stream.Stream;

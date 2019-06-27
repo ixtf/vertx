@@ -1,4 +1,4 @@
-package com.github.ixtf.vertx.util;
+package com.github.ixtf.vertx;
 
 import com.github.ixtf.japp.core.J;
 import com.google.common.collect.ImmutableSet;

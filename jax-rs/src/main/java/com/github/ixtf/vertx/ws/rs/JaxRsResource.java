@@ -2,7 +2,6 @@ package com.github.ixtf.vertx.ws.rs;
 
 import io.vertx.core.http.HttpMethod;
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
@@ -17,7 +16,6 @@ import static org.apache.commons.lang3.reflect.MethodUtils.getMethodsListWithAnn
  *
  * @author jzb 2019-02-16
  */
-@Slf4j
 class JaxRsResource {
     @Getter
     private final Class<?> resourceClass;
@@ -37,21 +35,21 @@ class JaxRsResource {
 
     public Stream<JaxRsRoute> routes() {
         Stream<JaxRsRoute> result = Stream.empty();
-        Stream<JaxRsRoute> routeStream = getMethodsListWithAnnotation(resourceClass, GET.class).stream()
-                .map(it -> JaxRsRoute.create(this, it, HttpMethod.GET));
+        Stream<JaxRsRoute> routeStream = getMethodsListWithAnnotation(resourceClass, GET.class).parallelStream()
+                .map(it -> JaxRsRoute.create(HttpMethod.GET, this, it));
         result = Stream.concat(result, routeStream);
 
-        routeStream = getMethodsListWithAnnotation(resourceClass, PUT.class).stream()
-                .map(it -> JaxRsRoute.create(this, it, HttpMethod.PUT));
+        routeStream = getMethodsListWithAnnotation(resourceClass, PUT.class).parallelStream()
+                .map(it -> JaxRsRoute.create(HttpMethod.PUT, this, it));
         result = Stream.concat(result, routeStream);
 
-        routeStream = getMethodsListWithAnnotation(resourceClass, POST.class).stream()
-                .map(it -> JaxRsRoute.create(this, it, HttpMethod.POST));
+        routeStream = getMethodsListWithAnnotation(resourceClass, POST.class).parallelStream()
+                .map(it -> JaxRsRoute.create(HttpMethod.POST, this, it));
         result = Stream.concat(result, routeStream);
 
-        routeStream = getMethodsListWithAnnotation(resourceClass, DELETE.class).stream()
-                .map(it -> JaxRsRoute.create(this, it, HttpMethod.DELETE));
-        return Stream.concat(result, routeStream);
+        routeStream = getMethodsListWithAnnotation(resourceClass, DELETE.class).parallelStream()
+                .map(it -> JaxRsRoute.create(HttpMethod.DELETE, this, it));
+        return Stream.concat(result, routeStream).parallel();
     }
 
 }
