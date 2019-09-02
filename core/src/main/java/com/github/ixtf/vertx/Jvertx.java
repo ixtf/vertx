@@ -49,8 +49,6 @@ import static java.util.stream.Collectors.*;
  */
 public final class Jvertx {
     public static final String API = "API";
-    public static final String REQUEST_METHOD = "request.method";
-    public static final String REQUEST_PATH = "request.path";
 
     private static final LoadingCache<Class<? extends RepresentationResolver>, Collection<?>> RESOLVER_CACHE = CacheBuilder.newBuilder()
             .expireAfterWrite(1, TimeUnit.MINUTES)
