@@ -5,15 +5,12 @@ import com.github.ixtf.japp.core.J;
 import com.github.ixtf.vertx.Jvertx;
 import com.google.common.collect.ImmutableSet;
 import com.sun.security.auth.UserPrincipal;
-import io.reactivex.Completable;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.ext.auth.User;
-import io.vertx.reactivex.ext.web.Route;
-import io.vertx.reactivex.ext.web.Router;
-import io.vertx.reactivex.ext.web.RoutingContext;
+import io.vertx.ext.web.Route;
+import io.vertx.ext.web.Router;
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -28,14 +25,11 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.security.Principal;
 import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 
 import static com.github.ixtf.japp.core.Constant.MAPPER;
 import static io.vertx.core.http.HttpMethod.*;
-import static java.util.stream.Collectors.toMap;
 
 /**
  * @author jzb 2019-02-14
@@ -72,16 +66,6 @@ public class RouteRepresentation {
         });
     }
 
-    JsonObject encode(RoutingContext rc) {
-        final JsonObject principal = Optional.ofNullable(rc.user()).map(User::principal).orElse(null);
-        final Map<String, String> pathParams = rc.pathParams();
-        final Map<String, List<String>> queryParams = rc.queryParams().names().parallelStream().collect(toMap(Function.identity(), rc.queryParams()::getAll));
-        return new JsonObject().put("principal", principal)
-                .put("pathParams", pathParams)
-                .put("queryParams", queryParams)
-                .put("body", rc.getBodyAsString());
-    }
-
     private String body(JsonObject body) {
         return body.getString("body", null);
     }
@@ -113,13 +97,13 @@ public class RouteRepresentation {
         route.handler(new RouteRepresentationHandler(this));
     }
 
-    public Completable consumer(Vertx vertx, Function<Class, Object> proxyFun) {
-        return consumer(vertx, proxyFun.compose(Method::getDeclaringClass).apply(method), this::defaultPrincipalFun);
+    public void consumer(Vertx vertx, Function<Class, Object> proxyFun) {
+        consumer(vertx, proxyFun.compose(Method::getDeclaringClass).apply(method), this::defaultPrincipalFun);
     }
 
-    public Completable consumer(Vertx vertx, Object proxy, Function<JsonObject, Principal> principalFun) {
+    public void consumer(Vertx vertx, Object proxy, Function<JsonObject, Principal> principalFun) {
         final RouteRepresentationConsumer handler = new RouteRepresentationConsumer(this, proxy, argsFun(principalFun));
-        return vertx.eventBus().consumer(address, handler).rxCompletionHandler();
+        vertx.eventBus().consumer(address, handler);
     }
 
     private Function<JsonObject, Object[]> argsFun(Function<JsonObject, Principal> principalFun) {

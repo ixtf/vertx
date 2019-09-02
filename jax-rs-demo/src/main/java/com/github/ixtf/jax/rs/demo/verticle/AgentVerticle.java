@@ -4,11 +4,10 @@ import com.github.ixtf.vertx.CorsConfig;
 import com.github.ixtf.vertx.Jvertx;
 import com.github.ixtf.vertx.ws.rs.JaxRsRouteResolver;
 import com.google.common.collect.Sets;
-import io.reactivex.Completable;
+import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpServerOptions;
-import io.vertx.reactivex.core.AbstractVerticle;
-import io.vertx.reactivex.ext.web.Router;
-import io.vertx.reactivex.redis.client.Redis;
+import io.vertx.ext.web.Router;
+import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisOptions;
 
 import java.util.Set;
@@ -18,7 +17,7 @@ import java.util.Set;
  */
 public class AgentVerticle extends AbstractVerticle {
     @Override
-    public Completable rxStart() {
+    public void start() {
         final Router router = Jvertx.router(vertx, new CorsConfig());
 
         final Redis redis = Redis.createClient(vertx, new RedisOptions());
@@ -37,10 +36,9 @@ public class AgentVerticle extends AbstractVerticle {
         final HttpServerOptions httpServerOptions = new HttpServerOptions()
                 .setDecompressionSupported(true)
                 .setCompressionSupported(true);
-        return vertx.createHttpServer(httpServerOptions)
+        vertx.createHttpServer(httpServerOptions)
                 .requestHandler(router)
-                .rxListen(8080)
-                .ignoreElement();
+                .listen(8080);
     }
 
     public static class AgentResolver extends JaxRsRouteResolver {

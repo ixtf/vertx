@@ -32,6 +32,7 @@ public class OperatorResource implements OperatorApi {
 
     @Override
     public void asyncTest() {
+        System.out.println(Thread.currentThread());
     }
 
     @Override

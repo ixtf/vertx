@@ -10,8 +10,8 @@ import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.DeliveryOptions;
+import io.vertx.core.eventbus.Message;
 import io.vertx.core.json.JsonObject;
-import io.vertx.reactivex.core.eventbus.Message;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -54,8 +54,8 @@ public class RouteRepresentationConsumer implements Handler<Message<JsonObject>>
         }).subscribe(pair -> {
             final DeliveryOptions deliveryOptions = pair.getValue();
             final Object message = pair.getKey();
-            apmSuccess(span, reply, message, deliveryOptions);
             reply.reply(message, deliveryOptions);
+            apmSuccess(span, reply, message, deliveryOptions);
         }, err -> {
             reply.fail(400, err.getLocalizedMessage());
             apmError(span, reply, err);

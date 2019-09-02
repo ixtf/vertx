@@ -1,7 +1,5 @@
 package com.github.ixtf.vertx;
 
-import com.github.ixtf.japp.core.J;
-import io.reactivex.*;
 import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.shareddata.impl.ClusterSerializable;
@@ -11,7 +9,6 @@ import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
 import java.time.Duration;
-import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
@@ -69,35 +66,6 @@ public class Envelope {
             final CompletionStage completionStage = (CompletionStage) o;
             return Mono.fromCompletionStage(completionStage).flatMap(Envelope::toMessage);
         }
-        if (o instanceof Completable) {
-            final Completable completable = (Completable) o;
-            return Mono.from(completable.toFlowable()).flatMap(Envelope::toMessage);
-        }
-        if (o instanceof Single) {
-            final Single single = (Single) o;
-            return Mono.from(single.toFlowable()).flatMap(Envelope::toMessage);
-        }
-        if (o instanceof Maybe) {
-            final Maybe maybe = (Maybe) o;
-            return Mono.from(maybe.toFlowable()).flatMap(Envelope::toMessage);
-        }
-        if (o instanceof Flowable) {
-            final Flowable flowable = (Flowable) o;
-            return Flux.from(flowable).collectList().flatMap(Envelope::toMessage);
-        }
-        if (o instanceof Observable) {
-            final Observable observable = (Observable) o;
-            final Flowable<Collection> flowable = observable.toList().toFlowable();
-            return Mono.from(flowable).flatMap(it -> {
-                if (J.isEmpty(it)) {
-                    return Mono.empty();
-                }
-                if (it.size() == 1) {
-                    return Flux.fromIterable(it).single();
-                }
-                return Mono.justOrEmpty(it);
-            }).flatMap(Envelope::toMessage);
-        }
         return Mono.fromCallable(() -> MAPPER.writeValueAsString(o));
     }
 
@@ -105,10 +73,6 @@ public class Envelope {
     public static void main(String[] args) {
         Mono.empty().defaultIfEmpty("").subscribe(it -> {
             System.out.println("test1");
-            System.out.println(it);
-        });
-        Mono.from(Completable.complete().toFlowable()).subscribe(it -> {
-            System.out.println("test2");
             System.out.println(it);
         });
         System.out.println("end");

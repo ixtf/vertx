@@ -9,13 +9,13 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
 import io.vertx.core.Handler;
+import io.vertx.core.MultiMap;
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.DeliveryOptions;
-import io.vertx.reactivex.core.MultiMap;
-import io.vertx.reactivex.core.buffer.Buffer;
-import io.vertx.reactivex.core.eventbus.Message;
-import io.vertx.reactivex.core.http.HttpServerRequest;
-import io.vertx.reactivex.core.http.HttpServerResponse;
-import io.vertx.reactivex.ext.web.RoutingContext;
+import io.vertx.core.eventbus.Message;
+import io.vertx.core.http.HttpServerRequest;
+import io.vertx.core.http.HttpServerResponse;
+import io.vertx.ext.web.RoutingContext;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
@@ -50,16 +50,19 @@ public class RouteRepresentationHandler implements Handler<RoutingContext> {
     public void handle(RoutingContext rc) {
         final HttpServerResponse response = rc.response();
         final DeliveryOptions deliveryOptions = getDeliveryOptions();
-        final Object message = routeRepresentation.encode(rc);
+        final Object message = Jvertx.encode(rc);
         final Span span = initApm(rc, deliveryOptions);
-        rc.vertx().eventBus().rxSend(routeRepresentation.getAddress(), message, deliveryOptions).subscribe(reply -> {
-            final MultiMap headers = reply.headers();
-            headers.entries().forEach(it -> response.putHeader(it.getKey(), it.getValue()));
-            rc.response().end(buffer(reply));
-            apmSuccess(span, rc, reply);
-        }, err -> {
-            rc.fail(err);
-            apmError(span, rc, err);
+        rc.vertx().eventBus().send(routeRepresentation.getAddress(), message, deliveryOptions, ar -> {
+            if (ar.succeeded()) {
+                final Message<Object> reply = ar.result();
+                final MultiMap headers = reply.headers();
+                headers.entries().forEach(it -> response.putHeader(it.getKey(), it.getValue()));
+                rc.response().end(buffer(reply));
+                apmSuccess(span, rc, reply);
+            } else {
+                rc.fail(ar.cause());
+                apmError(span, rc, ar.cause());
+            }
         });
     }
 

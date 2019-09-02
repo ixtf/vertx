@@ -1,7 +1,8 @@
 package com.github.ixtf.vertx.eb;
 
-import io.reactivex.Completable;
-import io.vertx.reactivex.core.Vertx;
+import io.vertx.core.AsyncResult;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 
@@ -21,10 +22,10 @@ public class EBRepresentation {
         this.method = method;
     }
 
-    public Completable consumer(Vertx vertx) {
-        return vertx.eventBus().consumer("", reply -> {
+    public void consumer(Vertx vertx, Handler<AsyncResult<Void>> handler) {
+        vertx.eventBus().consumer("", reply -> {
 
-        }).rxCompletionHandler();
+        }).completionHandler(handler);
     }
 
 }

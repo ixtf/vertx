@@ -1,7 +1,7 @@
 package com.github.ixtf.vertx.apm;
 
 import io.opentracing.propagation.TextMap;
-import io.vertx.reactivex.core.eventbus.Message;
+import io.vertx.core.eventbus.Message;
 
 import java.util.Iterator;
 import java.util.Map;

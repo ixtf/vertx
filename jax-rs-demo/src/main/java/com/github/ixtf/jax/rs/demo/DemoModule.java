@@ -1,11 +1,8 @@
 package com.github.ixtf.jax.rs.demo;
 
 import com.github.ixtf.persistence.mongo.Jmongo;
-import com.google.inject.AbstractModule;
-import com.google.inject.Injector;
-import com.google.inject.Provides;
-import com.google.inject.Singleton;
-import io.vertx.reactivex.core.Vertx;
+import com.google.inject.*;
+import io.vertx.core.Vertx;
 
 /**
  * @author jzb 2019-05-02
@@ -14,8 +11,12 @@ public class DemoModule extends AbstractModule {
     public static Injector INJECTOR;
     private final Vertx vertx;
 
-    public DemoModule(Vertx vertx) {
+    private DemoModule(Vertx vertx) {
         this.vertx = vertx;
+    }
+
+    static void init(Vertx vertx) {
+        INJECTOR = Guice.createInjector(new DemoModule(vertx));
     }
 
     @Provides

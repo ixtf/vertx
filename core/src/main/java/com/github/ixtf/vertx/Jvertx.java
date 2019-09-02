@@ -9,16 +9,17 @@ import com.google.common.cache.LoadingCache;
 import io.jaegertracing.Configuration;
 import io.opentracing.Tracer;
 import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonObject;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.core.http.HttpServerResponse;
-import io.vertx.reactivex.ext.web.Router;
-import io.vertx.reactivex.ext.web.RoutingContext;
-import io.vertx.reactivex.ext.web.handler.BodyHandler;
-import io.vertx.reactivex.ext.web.handler.CookieHandler;
-import io.vertx.reactivex.ext.web.handler.CorsHandler;
-import io.vertx.reactivex.ext.web.handler.ResponseContentTypeHandler;
+import io.vertx.ext.auth.User;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.CookieHandler;
+import io.vertx.ext.web.handler.CorsHandler;
+import io.vertx.ext.web.handler.ResponseContentTypeHandler;
 import lombok.SneakyThrows;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.BooleanUtils;
@@ -31,10 +32,7 @@ import javax.validation.executable.ExecutableValidator;
 import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Function;
@@ -49,6 +47,16 @@ import static java.util.stream.Collectors.*;
  */
 public final class Jvertx {
     public static final String API = "API";
+
+    public static final JsonObject encode(RoutingContext rc) {
+        final JsonObject principal = Optional.ofNullable(rc.user()).map(User::principal).orElse(null);
+        final Map<String, String> pathParams = rc.pathParams();
+        final Map<String, List<String>> queryParams = rc.queryParams().names().parallelStream().collect(toMap(Function.identity(), rc.queryParams()::getAll));
+        return new JsonObject().put("principal", principal)
+                .put("pathParams", pathParams)
+                .put("queryParams", queryParams)
+                .put("body", rc.getBodyAsString());
+    }
 
     private static final LoadingCache<Class<? extends RepresentationResolver>, Collection<?>> RESOLVER_CACHE = CacheBuilder.newBuilder()
             .expireAfterWrite(1, TimeUnit.MINUTES)
@@ -90,14 +98,8 @@ public final class Jvertx {
         ).collect(toSet());
         router.route().handler(CorsHandler.create("^http(s)?://(" + domainP + ")(:[1-9]\\d+)?")
                 .allowCredentials(corsConfig.isAllowCredentials())
-                .allowedHeaders(allowedHeaders)
-                .allowedMethod(HttpMethod.POST)
-                .allowedMethod(HttpMethod.PUT)
-                .allowedMethod(HttpMethod.PATCH)
-                .allowedMethod(HttpMethod.GET)
-                .allowedMethod(HttpMethod.DELETE)
-                .allowedMethod(HttpMethod.HEAD)
-                .allowedMethod(HttpMethod.OPTIONS));
+                .allowedMethods(Set.of(HttpMethod.values()))
+                .allowedHeaders(allowedHeaders));
         router.route().failureHandler(failureHandler);
         return router;
     }
