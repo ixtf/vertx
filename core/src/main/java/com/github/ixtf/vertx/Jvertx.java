@@ -7,6 +7,8 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import io.jaegertracing.Configuration;
+import io.jaegertracing.Configuration.ReporterConfiguration;
+import io.jaegertracing.Configuration.SamplerConfiguration;
 import io.opentracing.Tracer;
 import io.vertx.core.Handler;
 import io.vertx.core.http.HttpMethod;
@@ -173,9 +175,9 @@ public final class Jvertx {
     }
 
     public static Tracer initTracer(String service) {
-        io.jaegertracing.Configuration.SamplerConfiguration samplerConfig = io.jaegertracing.Configuration.SamplerConfiguration.fromEnv().withType("const").withParam(1);
-        io.jaegertracing.Configuration.ReporterConfiguration reporterConfig = io.jaegertracing.Configuration.ReporterConfiguration.fromEnv().withLogSpans(true);
-        io.jaegertracing.Configuration config = new Configuration(service).withSampler(samplerConfig).withReporter(reporterConfig);
+        final SamplerConfiguration samplerConfig = SamplerConfiguration.fromEnv().withType("const").withParam(1);
+        final ReporterConfiguration reporterConfig = ReporterConfiguration.fromEnv().withLogSpans(true);
+        final Configuration config = new Configuration(service).withSampler(samplerConfig).withReporter(reporterConfig);
         return config.getTracer();
     }
 

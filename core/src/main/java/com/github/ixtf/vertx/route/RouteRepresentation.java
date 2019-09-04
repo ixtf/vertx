@@ -65,11 +65,10 @@ public class RouteRepresentation {
         this.method = method;
     }
 
-    public <T extends Annotation> T getAnnotation(Class<T> clazz) {
-        return Optional.ofNullable(method.getAnnotation(clazz)).orElseGet(() -> {
-            final Class<?> declaringClass = method.getDeclaringClass();
-            return declaringClass.getAnnotation(clazz);
-        });
+    public static Principal defaultPrincipalFun(JsonObject body) {
+        final JsonObject jsonObject = body.getJsonObject("principal");
+        final String uid = jsonObject.getString("uid");
+        return new UserPrincipal(uid);
     }
 
     JsonObject encode(RoutingContext rc) {
@@ -94,10 +93,11 @@ public class RouteRepresentation {
         return body.getJsonObject("queryParams");
     }
 
-    private Principal defaultPrincipalFun(JsonObject body) {
-        final JsonObject jsonObject = body.getJsonObject("principal");
-        final String uid = jsonObject.getString("uid");
-        return new UserPrincipal(uid);
+    <T extends Annotation> T getAnnotation(Class<T> clazz) {
+        return Optional.ofNullable(method.getAnnotation(clazz)).orElseGet(() -> {
+            final Class<?> declaringClass = method.getDeclaringClass();
+            return declaringClass.getAnnotation(clazz);
+        });
     }
 
     public void router(Router router) {
@@ -110,16 +110,15 @@ public class RouteRepresentation {
         if (ArrayUtils.isNotEmpty(produces)) {
             Arrays.stream(produces).forEach(route::produces);
         }
-        route.handler(new RouteRepresentationHandler(this));
+        route.handler(RouteRepresentationHandler.create(this));
     }
 
     public Completable consumer(Vertx vertx, Function<Class, Object> proxyFun) {
-        return consumer(vertx, proxyFun.compose(Method::getDeclaringClass).apply(method), this::defaultPrincipalFun);
+        return consumer(vertx, proxyFun.compose(Method::getDeclaringClass).apply(method), RouteRepresentation::defaultPrincipalFun);
     }
 
     public Completable consumer(Vertx vertx, Object proxy, Function<JsonObject, Principal> principalFun) {
-        final RouteRepresentationConsumer handler = new RouteRepresentationConsumer(this, proxy, argsFun(principalFun));
-        return vertx.eventBus().consumer(address, handler).rxCompletionHandler();
+        return vertx.eventBus().consumer(address, RouteRepresentationConsumer.create(this, proxy, argsFun(principalFun))).rxCompletionHandler();
     }
 
     private Function<JsonObject, Object[]> argsFun(Function<JsonObject, Principal> principalFun) {

@@ -32,10 +32,14 @@ public class RouteRepresentationHandler implements Handler<RoutingContext> {
     private final VertxDelivery vertxDelivery;
     private final Apm apm;
 
-    RouteRepresentationHandler(RouteRepresentation routeRepresentation) {
+    private RouteRepresentationHandler(RouteRepresentation routeRepresentation) {
         this.routeRepresentation = routeRepresentation;
         vertxDelivery = routeRepresentation.getAnnotation(VertxDelivery.class);
         apm = routeRepresentation.getAnnotation(Apm.class);
+    }
+
+    static Handler<RoutingContext> create(RouteRepresentation routeRepresentation) {
+        return new RouteRepresentationHandler(routeRepresentation);
     }
 
     private DeliveryOptions getDeliveryOptions() {
@@ -53,13 +57,13 @@ public class RouteRepresentationHandler implements Handler<RoutingContext> {
         final Object message = routeRepresentation.encode(rc);
         final Span span = initApm(rc, deliveryOptions);
         rc.vertx().eventBus().rxSend(routeRepresentation.getAddress(), message, deliveryOptions).subscribe(reply -> {
+            apmSuccess(span, rc, reply);
             final MultiMap headers = reply.headers();
             headers.entries().forEach(it -> response.putHeader(it.getKey(), it.getValue()));
-            rc.response().end(buffer(reply));
-            apmSuccess(span, rc, reply);
+            response.end(buffer(reply));
         }, err -> {
-            rc.fail(err);
             apmError(span, rc, err);
+            rc.fail(err);
         });
     }
 

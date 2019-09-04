@@ -6,6 +6,7 @@ import com.google.inject.Guice;
 import io.reactivex.Completable;
 import io.vertx.core.VertxOptions;
 import io.vertx.reactivex.core.Vertx;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
@@ -15,6 +16,7 @@ import static com.github.ixtf.jax.rs.demo.DemoModule.INJECTOR;
 /**
  * @author jzb 2019-05-02
  */
+@Slf4j
 public class Agent {
 
     public static void main(String[] args) {

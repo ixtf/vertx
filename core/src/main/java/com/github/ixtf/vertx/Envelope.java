@@ -6,11 +6,9 @@ import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.shareddata.impl.ClusterSerializable;
 import lombok.Getter;
-import lombok.SneakyThrows;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 
-import java.time.Duration;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.concurrent.CompletionStage;
@@ -37,6 +35,10 @@ public class Envelope {
 
     public Envelope(Object data) {
         this(data, new DeliveryOptions());
+    }
+
+    public Mono<Object> toMessage() {
+        return toMessage(data);
     }
 
     public static Mono<Object> toMessage(Object o) {
@@ -101,27 +103,9 @@ public class Envelope {
         return Mono.fromCallable(() -> MAPPER.writeValueAsString(o));
     }
 
-    @SneakyThrows
-    public static void main(String[] args) {
-        Mono.empty().defaultIfEmpty("").subscribe(it -> {
-            System.out.println("test1");
-            System.out.println(it);
-        });
-        Mono.from(Completable.complete().toFlowable()).subscribe(it -> {
-            System.out.println("test2");
-            System.out.println(it);
-        });
-        System.out.println("end");
-        Thread.sleep(Duration.ofDays(1).toMillis());
-    }
-
     public Envelope putHeader(String name, String value) {
         deliveryOptions.addHeader(name, value);
         return this;
-    }
-
-    public Mono<Object> toMessage() {
-        return toMessage(data);
     }
 
 }

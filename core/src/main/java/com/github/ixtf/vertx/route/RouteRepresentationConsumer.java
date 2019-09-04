@@ -34,11 +34,15 @@ public class RouteRepresentationConsumer implements Handler<Message<JsonObject>>
     private final Function<JsonObject, Object[]> argsFun;
     private final Apm apm;
 
-    RouteRepresentationConsumer(RouteRepresentation routeRepresentation, Object proxy, Function<JsonObject, Object[]> argsFun) {
+    private RouteRepresentationConsumer(RouteRepresentation routeRepresentation, Object proxy, Function<JsonObject, Object[]> argsFun) {
         this.routeRepresentation = routeRepresentation;
         this.proxy = proxy;
         this.argsFun = argsFun;
         apm = routeRepresentation.getAnnotation(Apm.class);
+    }
+
+    static Handler<Message<JsonObject>> create(RouteRepresentation routeRepresentation, Object proxy, Function<JsonObject, Object[]> argsFun) {
+        return new RouteRepresentationConsumer(routeRepresentation, proxy, argsFun);
     }
 
     @Override
@@ -52,13 +56,13 @@ public class RouteRepresentationConsumer implements Handler<Message<JsonObject>>
             final DeliveryOptions deliveryOptions = envelope.getDeliveryOptions();
             return envelope.toMessage().defaultIfEmpty("").map(it -> Pair.of(it, deliveryOptions));
         }).subscribe(pair -> {
-            final DeliveryOptions deliveryOptions = pair.getValue();
             final Object message = pair.getKey();
+            final DeliveryOptions deliveryOptions = pair.getValue();
             apmSuccess(span, reply, message, deliveryOptions);
             reply.reply(message, deliveryOptions);
         }, err -> {
-            reply.fail(400, err.getLocalizedMessage());
             apmError(span, reply, err);
+            reply.fail(400, err.getLocalizedMessage());
         });
     }
 
@@ -94,6 +98,7 @@ public class RouteRepresentationConsumer implements Handler<Message<JsonObject>>
 
     private void apmError(Span span, Message<JsonObject> reply, Throwable err) {
         if (span == null) {
+            log.error(String.join(" : ", routeRepresentation.getAddress(), reply.body().encode()), err);
             return;
         }
         span.setTag(Tags.ERROR, true);
