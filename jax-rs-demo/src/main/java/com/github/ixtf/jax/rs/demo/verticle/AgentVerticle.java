@@ -5,6 +5,8 @@ import com.github.ixtf.vertx.Jvertx;
 import com.github.ixtf.vertx.ws.rs.JaxRsRouteResolver;
 import com.google.common.collect.Sets;
 import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
+import io.vertx.core.http.HttpServer;
 import io.vertx.core.http.HttpServerOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.redis.client.Redis;
@@ -16,8 +18,9 @@ import java.util.Set;
  * @author jzb 2019-05-02
  */
 public class AgentVerticle extends AbstractVerticle {
+
     @Override
-    public void start() {
+    public void start(Future<Void> startFuture) throws Exception {
         final Router router = Jvertx.router(vertx, new CorsConfig());
 
         final Redis redis = Redis.createClient(vertx, new RedisOptions());
@@ -36,9 +39,11 @@ public class AgentVerticle extends AbstractVerticle {
         final HttpServerOptions httpServerOptions = new HttpServerOptions()
                 .setDecompressionSupported(true)
                 .setCompressionSupported(true);
-        vertx.createHttpServer(httpServerOptions)
+        Future.<HttpServer>future(promise -> vertx.createHttpServer(httpServerOptions)
                 .requestHandler(router)
-                .listen(8080);
+                .listen(8080, promise))
+                .<Void>mapEmpty()
+                .setHandler(startFuture);
     }
 
     public static class AgentResolver extends JaxRsRouteResolver {

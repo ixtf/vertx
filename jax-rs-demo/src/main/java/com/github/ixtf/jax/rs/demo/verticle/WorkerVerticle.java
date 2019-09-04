@@ -12,6 +12,7 @@ import static com.github.ixtf.jax.rs.demo.DemoModule.INJECTOR;
  * @author jzb 2019-05-02
  */
 public class WorkerVerticle extends AbstractVerticle {
+
     @Override
     public void start() {
         vertx.eventBus().consumer("test", reply -> {

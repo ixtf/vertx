@@ -21,17 +21,13 @@ import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.ResponseContentTypeHandler;
 import lombok.SneakyThrows;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.math.NumberUtils;
 import org.apache.commons.lang3.reflect.MethodUtils;
 
 import javax.validation.*;
 import javax.validation.executable.ExecutableValidator;
 import java.lang.reflect.Method;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -39,7 +35,6 @@ import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.github.ixtf.japp.core.Constant.MAPPER;
-import static com.github.ixtf.japp.core.Constant.YAML_MAPPER;
 import static java.util.stream.Collectors.*;
 
 /**
@@ -79,31 +74,6 @@ public final class Jvertx {
         }).distinct();
     }
 
-    public static Router router(Vertx vertx, CorsConfig corsConfig) {
-        return router(vertx, corsConfig, Jvertx::failureHandler);
-    }
-
-    public static Router router(Vertx vertx, CorsConfig corsConfig, Handler<RoutingContext> failureHandler) {
-        final Router router = Router.router(vertx);
-        router.route().handler(BodyHandler.create());
-        router.route().handler(ResponseContentTypeHandler.create());
-        router.route().handler(CookieHandler.create());
-        final String domainP = Stream.concat(
-                Stream.of("localhost", "127\\.0\\.0\\.1").parallel(),
-                J.emptyIfNull(corsConfig.getDomainPatterns()).parallelStream()
-        ).collect(joining("|"));
-        final Set<String> allowedHeaders = Stream.concat(
-                Stream.of("authorization", "origin", "accept", "content-type", "access-control-allow-origin").parallel(),
-                J.emptyIfNull(corsConfig.getAllowedHeaders()).parallelStream()
-        ).collect(toSet());
-        router.route().handler(CorsHandler.create("^http(s)?://(" + domainP + ")(:[1-9]\\d+)?")
-                .allowCredentials(corsConfig.isAllowCredentials())
-                .allowedMethods(Set.of(HttpMethod.values()))
-                .allowedHeaders(allowedHeaders));
-        router.route().failureHandler(failureHandler);
-        return router;
-    }
-
     public static void failureHandler(RoutingContext rc) {
         final HttpServerResponse response = rc.response().setStatusCode(400);
         final Throwable failure = rc.failure();
@@ -118,28 +88,6 @@ public final class Jvertx {
                     .put("errorMessage", failure.getLocalizedMessage());
         }
         response.end(result.encode());
-    }
-
-    @SneakyThrows
-    public static JsonObject readJsonObject(String first, String... more) {
-        return readJsonObject(Paths.get(first, more));
-    }
-
-    @SneakyThrows
-    public static JsonObject readJsonObject(Path path) {
-        final String extension = FilenameUtils.getExtension(path.toString());
-        switch (StringUtils.lowerCase(extension)) {
-            case "json": {
-                final Map map = MAPPER.readValue(path.toFile(), Map.class);
-                return new JsonObject(map);
-            }
-            case "yaml":
-            case "yml": {
-                final Map map = YAML_MAPPER.readValue(path.toFile(), Map.class);
-                return new JsonObject(map);
-            }
-        }
-        throw new RuntimeException(path + "，格式不支持！");
     }
 
     @SneakyThrows
@@ -229,5 +177,30 @@ public final class Jvertx {
         }
 
         throw new UnsupportedOperationException();
+    }
+
+    public static Router router(Vertx vertx, CorsConfig corsConfig) {
+        return router(vertx, corsConfig, Jvertx::failureHandler);
+    }
+
+    public static Router router(Vertx vertx, CorsConfig corsConfig, Handler<RoutingContext> failureHandler) {
+        final Router router = Router.router(vertx);
+        router.route().handler(BodyHandler.create());
+        router.route().handler(ResponseContentTypeHandler.create());
+        router.route().handler(CookieHandler.create());
+        final String domainP = Stream.concat(
+                Stream.of("localhost", "127\\.0\\.0\\.1").parallel(),
+                J.emptyIfNull(corsConfig.getDomainPatterns()).parallelStream()
+        ).collect(joining("|"));
+        final Set<String> allowedHeaders = Stream.concat(
+                Stream.of("authorization", "origin", "accept", "content-type", "access-control-allow-origin").parallel(),
+                J.emptyIfNull(corsConfig.getAllowedHeaders()).parallelStream()
+        ).collect(toSet());
+        router.route().handler(CorsHandler.create("^http(s)?://(" + domainP + ")(:[1-9]\\d+)?")
+                .allowCredentials(corsConfig.isAllowCredentials())
+                .allowedMethods(Set.of(HttpMethod.values()))
+                .allowedHeaders(allowedHeaders));
+        router.route().failureHandler(failureHandler);
+        return router;
     }
 }
