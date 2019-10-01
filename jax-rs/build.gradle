@@ -1,7 +1,10 @@
 dependencies {
     compile project(":core"),
             "com.google.inject:guice",
-            "io.vertx:vertx-auth-jwt"
+            "io.vertx:vertx-auth-jwt",
+
+            "org.hibernate.validator:hibernate-validator",
+            "org.glassfish:javax.el"
 
     testCompile "com.github.ixtf.persistence:mongo",
             "com.github.ixtf.japp:poi"

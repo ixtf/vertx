@@ -33,20 +33,11 @@ subprojects {
     dependencies {
         compile "com.github.ixtf.japp:codec",
                 "io.vertx:vertx-hazelcast",
-                "io.vertx:vertx-reactive-streams",
                 "io.vertx:vertx-web",
                 "io.vertx:vertx-config-yaml",
-                "io.vertx:vertx-service-discovery",
-                "io.vertx:vertx-circuit-breaker",
-                "io.vertx:vertx-service-proxy",
                 "io.vertx:vertx-health-check",
-                "io.vertx:vertx-dropwizard-metrics",
                 'io.projectreactor:reactor-core',
-                'io.jaegertracing:jaeger-client:1.0.0',
-
-                "javax:javaee-api",
-                "org.hibernate.validator:hibernate-validator",
-                "org.glassfish:javax.el"
+                'io.jaegertracing:jaeger-client:1.0.0'
 
         compileOnly "io.vertx:vertx-codegen"
 
