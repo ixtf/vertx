@@ -2,4 +2,6 @@ rootProject.name = 'com.github.ixtf.vertx'
 include 'core'
 include 'jax-rs'
 include 'jax-rs-demo'
+include 'graphql'
+include 'graphql-demo'
 

@@ -6,8 +6,6 @@ import com.github.ixtf.japp.core.exception.JError;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import io.jaegertracing.Configuration;
-import io.opentracing.Tracer;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
@@ -85,7 +83,7 @@ public final class Jvertx {
                     .put("errorMessage", ex.getMessage());
         } else {
             result.put("errorCode", Constant.ErrorCode.SYSTEM)
-                    .put("errorMessage", failure.getLocalizedMessage());
+                    .put("errorMessage", failure.getMessage());
         }
         response.end(result.encode());
     }
@@ -120,13 +118,6 @@ public final class Jvertx {
     }
 
     private Jvertx() {
-    }
-
-    public static Tracer initTracer(String service) {
-        io.jaegertracing.Configuration.SamplerConfiguration samplerConfig = io.jaegertracing.Configuration.SamplerConfiguration.fromEnv().withType("const").withParam(1);
-        io.jaegertracing.Configuration.ReporterConfiguration reporterConfig = io.jaegertracing.Configuration.ReporterConfiguration.fromEnv().withLogSpans(true);
-        io.jaegertracing.Configuration config = new Configuration(service).withSampler(samplerConfig).withReporter(reporterConfig);
-        return config.getTracer();
     }
 
     public static Function<String, ?> paramFun(Class<?> parameterType) {

@@ -52,16 +52,16 @@ public class RouteRepresentationHandler implements Handler<RoutingContext> {
         final DeliveryOptions deliveryOptions = getDeliveryOptions();
         final Object message = Jvertx.encode(rc);
         final Span span = initApm(rc, deliveryOptions);
-        rc.vertx().eventBus().send(routeRepresentation.getAddress(), message, deliveryOptions, ar -> {
+        rc.vertx().eventBus().request(routeRepresentation.getAddress(), message, deliveryOptions, ar -> {
             if (ar.succeeded()) {
                 final Message<Object> reply = ar.result();
                 final MultiMap headers = reply.headers();
                 headers.entries().forEach(it -> response.putHeader(it.getKey(), it.getValue()));
-                rc.response().end(buffer(reply));
                 apmSuccess(span, rc, reply);
+                rc.response().end(buffer(reply));
             } else {
-                rc.fail(ar.cause());
                 apmError(span, rc, ar.cause());
+                rc.fail(ar.cause());
             }
         });
     }
