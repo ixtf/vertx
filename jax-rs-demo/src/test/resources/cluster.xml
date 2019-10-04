@@ -27,9 +27,9 @@
            http://www.hazelcast.com/schema/config/hazelcast-config-3.10.xsd">
 
     <group>
-        <name>jzb</name>
+        <name>jzb-test</name>
     </group>
-    <management-center enabled="false">http://localhost:8080/hazelcast-mancenter</management-center>
+    <management-center enabled="true">http://localhost:9090/hazelcast-mancenter</management-center>
     <network>
         <port auto-increment="true" port-count="100">5701</port>
         <outbound-ports>
