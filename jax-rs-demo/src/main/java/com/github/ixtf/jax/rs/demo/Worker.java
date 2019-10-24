@@ -26,7 +26,7 @@ public class Worker {
             DemoModule.init(vertx);
             final Future<String> f1 = Future.future(promise -> {
                 final DeploymentOptions deploymentOptions = new DeploymentOptions().setWorker(true);
-                vertx.deployVerticle(WorkerVerticle.class.getName(), deploymentOptions, promise);
+                vertx.deployVerticle(WorkerVerticle.class, deploymentOptions, promise);
             });
             return CompositeFuture.all(List.of(f1));
         }).setHandler(ar -> {

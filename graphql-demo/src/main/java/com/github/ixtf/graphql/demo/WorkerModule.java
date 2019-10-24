@@ -1,7 +1,10 @@
 package com.github.ixtf.graphql.demo;
 
-import com.google.common.io.Resources;
-import com.google.inject.*;
+import com.github.ixtf.vertx.graphql.JgraphqlModule;
+import com.google.inject.Guice;
+import com.google.inject.Injector;
+import com.google.inject.Provides;
+import com.google.inject.Singleton;
 import graphql.GraphQL;
 import graphql.schema.GraphQLSchema;
 import graphql.schema.idl.RuntimeWiring;
@@ -9,17 +12,13 @@ import graphql.schema.idl.SchemaGenerator;
 import graphql.schema.idl.SchemaParser;
 import graphql.schema.idl.TypeDefinitionRegistry;
 import io.vertx.core.Vertx;
-import lombok.SneakyThrows;
 
-import java.net.URL;
 import java.util.stream.Stream;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 /**
  * @author jzb 2019-05-02
  */
-public class WorkerModule extends AbstractModule {
+public class WorkerModule extends JgraphqlModule {
     public static Injector INJECTOR;
     private final Vertx vertx;
 
@@ -49,12 +48,6 @@ public class WorkerModule extends AbstractModule {
         final RuntimeWiring runtimeWiring = DataFetchers.buildWiring();
         final GraphQLSchema graphQLSchema = schemaGenerator.makeExecutableSchema(typeDefinitionRegistry, runtimeWiring);
         return GraphQL.newGraphQL(graphQLSchema).build();
-    }
-
-    @SneakyThrows
-    private String loadSdl(String fileName) {
-        final URL url = Resources.getResource(fileName);
-        return Resources.toString(url, UTF_8);
     }
 
 }

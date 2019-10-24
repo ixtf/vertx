@@ -14,6 +14,8 @@ import io.vertx.redis.client.RedisOptions;
 
 import java.util.Set;
 
+import static com.github.ixtf.jax.rs.demo.DemoModule.INJECTOR;
+
 /**
  * @author jzb 2019-05-02
  */
@@ -35,7 +37,7 @@ public class AgentVerticle extends AbstractVerticle {
             rc.response().end();
         });
 
-        Jvertx.resolve(AgentResolver.class).forEach(it -> it.router(router));
+        Jvertx.resolve(AgentResolver.class).forEach(it -> it.router(router, INJECTOR::getInstance));
         final HttpServerOptions httpServerOptions = new HttpServerOptions()
                 .setDecompressionSupported(true)
                 .setCompressionSupported(true);

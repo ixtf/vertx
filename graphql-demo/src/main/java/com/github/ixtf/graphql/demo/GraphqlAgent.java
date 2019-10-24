@@ -1,11 +1,11 @@
 package com.github.ixtf.graphql.demo;
 
+import com.github.ixtf.japp.core.J;
 import graphql.GraphQL;
 import io.vertx.core.*;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerOptions;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
@@ -17,8 +17,7 @@ import io.vertx.ext.web.handler.graphql.GraphiQLHandlerOptions;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 
-import java.util.Collections;
-import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -31,15 +30,23 @@ import static com.github.ixtf.graphql.demo.AgentModule.INJECTOR;
 public class GraphqlAgent extends AbstractVerticle {
 
     public static void main(String[] args) {
-        final VertxOptions vertxOptions = new VertxOptions()
-                .setWorkerPoolSize(1)
-                .setMaxWorkerExecuteTime(1)
-                .setMaxWorkerExecuteTimeUnit(TimeUnit.DAYS);
-        final Vertx vertx = Vertx.vertx(vertxOptions);
-        AgentModule.init(vertx);
-        vertx.deployVerticle(GraphqlAgent.class, new DeploymentOptions(), ar -> {
+        Future.<Vertx>future(promise -> {
+            final VertxOptions vertxOptions = new VertxOptions()
+                    .setMaxEventLoopExecuteTime(TimeUnit.SECONDS.toNanos(10));
+            Optional.ofNullable(System.getProperty("vertx.cluster.host")).filter(J::nonBlank)
+                    .ifPresent(vertxOptions.getEventBusOptions()::setHost);
+            Vertx.clusteredVertx(vertxOptions, promise);
+        }).compose(vertx -> {
+            AgentModule.init(vertx);
+            return Future.<String>future(p -> {
+                final DeploymentOptions deploymentOptions = new DeploymentOptions();
+                vertx.deployVerticle(GraphqlAgent.class, deploymentOptions, p);
+            });
+        }).setHandler(ar -> {
             if (ar.succeeded()) {
-                System.out.println("deploy success");
+                System.out.println("agent success");
+            } else {
+                ar.cause().printStackTrace();
             }
         });
     }
@@ -91,14 +98,5 @@ public class GraphqlAgent extends AbstractVerticle {
         vertx.createHttpServer(httpServerOptions)
                 .requestHandler(router)
                 .listen(8080, ar -> startFuture.handle(ar.mapEmpty()));
-    }
-
-    private Map<String, Object> extractVariables(JsonObject request) {
-        JsonObject variables = request.getJsonObject("variables");
-        if (variables == null) {
-            return Collections.emptyMap();
-        } else {
-            return variables.getMap();
-        }
     }
 }

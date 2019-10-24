@@ -27,7 +27,7 @@
            http://www.hazelcast.com/schema/config/hazelcast-config-3.10.xsd">
 
     <group>
-        <name>jax-rs-demo</name>
+        <name>graphql-demo</name>
     </group>
     <management-center enabled="false">http://localhost:8080/hazelcast-mancenter</management-center>
     <network>

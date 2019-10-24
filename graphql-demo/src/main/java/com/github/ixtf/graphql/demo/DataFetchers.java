@@ -2,27 +2,17 @@ package com.github.ixtf.graphql.demo;
 
 import com.github.ixtf.vertx.graphql.Jgraphql;
 import graphql.schema.DataFetcher;
-import graphql.schema.DataFetchingEnvironment;
 import graphql.schema.idl.FieldWiringEnvironment;
 import graphql.schema.idl.RuntimeWiring;
 import graphql.schema.idl.WiringFactory;
-import io.vertx.core.Future;
-import io.vertx.core.Promise;
-import io.vertx.core.eventbus.DeliveryOptions;
-import io.vertx.core.eventbus.Message;
-import io.vertx.core.json.Json;
-import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.graphql.VertxDataFetcher;
 import io.vertx.ext.web.handler.graphql.VertxPropertyDataFetcher;
-import io.vertx.ext.web.handler.graphql.impl.GraphQLBatch;
-import io.vertx.ext.web.handler.graphql.impl.GraphQLInput;
-import io.vertx.ext.web.handler.graphql.impl.GraphQLQuery;
-import reactor.core.publisher.Mono;
-import reactor.core.scheduler.Schedulers;
 
+import java.util.Date;
 import java.util.List;
-
-import static java.util.stream.Collectors.toList;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 /**
  * @author jzb 2019-09-24
@@ -45,34 +35,31 @@ public class DataFetchers {
                             return Thread.currentThread().toString();
                         })
                         .dataFetcher("listOperator", listOperator())
+                )
+                .type("Mutation", builder -> builder
+                        .dataFetcher("createOperator", createOperator())
                 ).build();
     }
 
     private static DataFetcher listOperator() {
         return new VertxDataFetcher<>((env, promise) -> {
-            final RoutingContext rc = env.getContext();
-            final GraphQLInput graphQLInput = Json.decodeValue(rc.getBody(), GraphQLInput.class);
-            if (graphQLInput instanceof GraphQLQuery) {
-                handleQuery(env, promise, rc, (GraphQLQuery) graphQLInput);
-            } else if (graphQLInput instanceof GraphQLBatch) {
-                handleBatch(env, promise, rc, (GraphQLBatch) graphQLInput);
-            } else {
-                promise.fail("500");
-            }
+            final long first = env.getArgument("first");
+            final int pageSize = env.getArgument("pageSize");
+            final long count = 12345;
+            final List<Map> operators = IntStream.range(0, 10).mapToObj(i ->
+                    Map.of("id", i, "name", "name" + i, "birthDate", new Date(), "cdt", new Date())
+            ).collect(Collectors.toList());
+            final Map<String, Object> map = Map.of("first", first, "pageSize", pageSize, "count", count, "operators", operators);
+            promise.complete(map);
         });
     }
 
-    private static void handleQuery(DataFetchingEnvironment env, Promise<Object> promise, RoutingContext rc, GraphQLQuery graphQLQuery) {
-        final Mono<String> address$ = Mono.fromCallable(() -> "graphql:Query:" + env.getField().getName()).subscribeOn(Schedulers.elastic());
-        final Mono<String> message$ = Mono.fromCallable(() -> Json.encode(graphQLQuery)).subscribeOn(Schedulers.elastic());
-        final Mono<DeliveryOptions> deliveryOptions$ = Mono.fromCallable(() -> new DeliveryOptions()).subscribeOn(Schedulers.elastic());
-        Mono.zip(address$, message$, deliveryOptions$).map(tuple3 ->
-                Future.<Message<Object>>future(p -> rc.vertx().eventBus().request(tuple3.getT1(), tuple3.getT2(), tuple3.getT3(), p))
-                        .map(Message::body).setHandler(promise)
-        ).subscribe();
-    }
-
-    private static void handleBatch(DataFetchingEnvironment env, Promise<Object> promise, RoutingContext rc, GraphQLBatch graphQLBatch) {
-        final List<String> batchQuery = graphQLBatch.stream().map(GraphQLQuery::getQuery).collect(toList());
+    private static DataFetcher createOperator() {
+        return new VertxDataFetcher<>((env, promise) -> {
+            final Map<String, Object> command = env.getArgument("command");
+            System.out.println(command);
+            final Map<String, Object> map = Map.of("id", "id", "name", command.get("name"), "birthDate", new Date(), "cdt", new Date());
+            promise.complete(map);
+        });
     }
 }

@@ -11,25 +11,19 @@ import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
 import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonObject;
-import io.vertx.ext.auth.User;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
 import io.vertx.ext.web.handler.BodyHandler;
-import io.vertx.ext.web.handler.CookieHandler;
 import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.ResponseContentTypeHandler;
 import lombok.SneakyThrows;
-import org.apache.commons.lang3.BooleanUtils;
-import org.apache.commons.lang3.math.NumberUtils;
-import org.apache.commons.lang3.reflect.MethodUtils;
 
 import javax.validation.*;
-import javax.validation.executable.ExecutableValidator;
-import java.lang.reflect.Method;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static com.github.ixtf.japp.core.Constant.MAPPER;
@@ -40,16 +34,6 @@ import static java.util.stream.Collectors.*;
  */
 public final class Jvertx {
     public static final String API = "API";
-
-    public static final JsonObject encode(RoutingContext rc) {
-        final JsonObject principal = Optional.ofNullable(rc.user()).map(User::principal).orElse(null);
-        final Map<String, String> pathParams = rc.pathParams();
-        final Map<String, List<String>> queryParams = rc.queryParams().names().parallelStream().collect(toMap(Function.identity(), rc.queryParams()::getAll));
-        return new JsonObject().put("principal", principal)
-                .put("pathParams", pathParams)
-                .put("queryParams", queryParams)
-                .put("body", rc.getBodyAsString());
-    }
 
     private static final LoadingCache<Class<? extends RepresentationResolver>, Collection<?>> RESOLVER_CACHE = CacheBuilder.newBuilder()
             .expireAfterWrite(1, TimeUnit.MINUTES)
@@ -105,71 +89,6 @@ public final class Jvertx {
         return command;
     }
 
-    @SneakyThrows
-    public static Object checkAndInvoke(Object proxy, Method method, Object[] args) {
-        final ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
-        final Validator validator = validatorFactory.getValidator();
-        final ExecutableValidator executableValidator = validator.forExecutables();
-        final Set<ConstraintViolation<Object>> violations = executableValidator.validateParameters(proxy, method, args);
-        if (J.nonEmpty(violations)) {
-            throw new ConstraintViolationException(violations);
-        }
-        return MethodUtils.invokeMethod(proxy, true, method.getName(), args);
-    }
-
-    private Jvertx() {
-    }
-
-    public static Function<String, ?> paramFun(Class<?> parameterType) {
-        if (String.class.isAssignableFrom(parameterType)) {
-            return Function.identity();
-        }
-
-        if (boolean.class.isAssignableFrom(parameterType)) {
-            return BooleanUtils::toBoolean;
-        }
-        if (Boolean.class.isAssignableFrom(parameterType)) {
-            return BooleanUtils::toBooleanObject;
-        }
-
-        if (int.class.isAssignableFrom(parameterType)) {
-            return NumberUtils::toInt;
-        }
-        if (Integer.class.isAssignableFrom(parameterType)) {
-            return NumberUtils::createInteger;
-        }
-
-        if (float.class.isAssignableFrom(parameterType)) {
-            return NumberUtils::toFloat;
-        }
-        if (Float.class.isAssignableFrom(parameterType)) {
-            return NumberUtils::createFloat;
-        }
-
-        if (double.class.isAssignableFrom(parameterType)) {
-            return NumberUtils::toDouble;
-        }
-        if (Double.class.isAssignableFrom(parameterType)) {
-            return NumberUtils::createDouble;
-        }
-
-        if (short.class.isAssignableFrom(parameterType)) {
-            return NumberUtils::toShort;
-        }
-        if (Short.class.isAssignableFrom(parameterType)) {
-            return it -> J.isBlank(it) ? null : Short.valueOf(it);
-        }
-
-        if (byte.class.isAssignableFrom(parameterType)) {
-            return NumberUtils::toByte;
-        }
-        if (Byte.class.isAssignableFrom(parameterType)) {
-            return it -> J.isBlank(it) ? null : Byte.valueOf(it);
-        }
-
-        throw new UnsupportedOperationException();
-    }
-
     public static Router router(Vertx vertx, CorsConfig corsConfig) {
         return router(vertx, corsConfig, Jvertx::failureHandler);
     }
@@ -178,7 +97,6 @@ public final class Jvertx {
         final Router router = Router.router(vertx);
         router.route().handler(BodyHandler.create());
         router.route().handler(ResponseContentTypeHandler.create());
-        router.route().handler(CookieHandler.create());
         final String domainP = Stream.concat(
                 Stream.of("localhost", "127\\.0\\.0\\.1").parallel(),
                 J.emptyIfNull(corsConfig.getDomainPatterns()).parallelStream()
@@ -194,4 +112,5 @@ public final class Jvertx {
         router.route().failureHandler(failureHandler);
         return router;
     }
+
 }

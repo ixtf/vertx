@@ -27,7 +27,7 @@ public class Agent {
 
             final Future<String> f1 = Future.future(promise -> {
                 final DeploymentOptions deploymentOptions = new DeploymentOptions();
-                vertx.deployVerticle(AgentVerticle.class.getName(), deploymentOptions, promise);
+                vertx.deployVerticle(AgentVerticle.class, deploymentOptions, promise);
             });
             return CompositeFuture.all(List.of(f1));
         }).setHandler(ar -> {

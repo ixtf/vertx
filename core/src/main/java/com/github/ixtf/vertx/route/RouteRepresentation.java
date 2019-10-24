@@ -66,6 +66,19 @@ public class RouteRepresentation {
         });
     }
 
+    public void router(Router router, Function<Class, Object> proxyFun) {
+        final Route route = router.route(httpMethod, path);
+        if (ArrayUtils.isNotEmpty(consumes)) {
+            if (ImmutableSet.of(POST, PUT, PATCH).contains(httpMethod)) {
+                Arrays.stream(consumes).forEach(route::consumes);
+            }
+        }
+        if (ArrayUtils.isNotEmpty(produces)) {
+            Arrays.stream(produces).forEach(route::produces);
+        }
+        route.handler(new RouteRepresentationHandler(this, proxyFun));
+    }
+
     private String body(JsonObject body) {
         return body.getString("body", null);
     }
@@ -84,25 +97,12 @@ public class RouteRepresentation {
         return new UserPrincipal(uid);
     }
 
-    public void router(Router router) {
-        final Route route = router.route(httpMethod, path);
-        if (ArrayUtils.isNotEmpty(consumes)) {
-            if (ImmutableSet.of(POST, PUT, PATCH).contains(httpMethod)) {
-                Arrays.stream(consumes).forEach(route::consumes);
-            }
-        }
-        if (ArrayUtils.isNotEmpty(produces)) {
-            Arrays.stream(produces).forEach(route::produces);
-        }
-        route.handler(new RouteRepresentationHandler(this));
-    }
-
     public void consumer(Vertx vertx, Function<Class, Object> proxyFun) {
-        consumer(vertx, proxyFun.compose(Method::getDeclaringClass).apply(method), this::defaultPrincipalFun);
+        consumer(vertx, proxyFun, this::defaultPrincipalFun);
     }
 
-    public void consumer(Vertx vertx, Object proxy, Function<JsonObject, Principal> principalFun) {
-        final RouteRepresentationConsumer handler = new RouteRepresentationConsumer(this, proxy, argsFun(principalFun));
+    public void consumer(Vertx vertx, Function<Class, Object> proxyFun, Function<JsonObject, Principal> principalFun) {
+        final RouteRepresentationConsumer handler = new RouteRepresentationConsumer(this, proxyFun, argsFun(principalFun));
         vertx.eventBus().consumer(address, handler);
     }
 
@@ -128,7 +128,7 @@ public class RouteRepresentation {
         if (pathParam != null) {
             final String key = pathParam.value();
             final Function<JsonObject, JsonObject> pathParamsFun = this::pathParams;
-            final Function<String, ?> paramFun = Jvertx.paramFun(parameterType);
+            final Function<String, ?> paramFun = RoutingContextEnvelope.paramFun(parameterType);
             return pathParamsFun.andThen(it -> it.getString(key)).andThen(paramFun);
         }
 
@@ -137,7 +137,7 @@ public class RouteRepresentation {
             final String defaultValue = getDefaultValue(parameter);
             final String key = queryParam.value();
             final Function<JsonObject, JsonObject> queryParamsFun = this::queryParams;
-            final Function<String, ?> paramFun = Jvertx.paramFun(parameterType);
+            final Function<String, ?> paramFun = RoutingContextEnvelope.paramFun(parameterType);
             return queryParamsFun.andThen(queryParams -> Optional.ofNullable(queryParams.getJsonArray(key))
                     .filter(it -> !it.isEmpty())
                     .map(it -> it.getString(0))

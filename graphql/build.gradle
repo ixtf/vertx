@@ -1,4 +1,4 @@
 dependencies {
-    compile "io.vertx:vertx-web-graphql",
-            "com.google.inject:guice"
+    compile project(":core"),
+            "io.vertx:vertx-web-graphql"
 }

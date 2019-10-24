@@ -28,4 +28,5 @@ public class Jgraphql {
         }
         return input.getClass().getSimpleName();
     }
+
 }
