@@ -1,6 +1,5 @@
 package com.github.ixtf.vertx.graphql.config;
 
-import com.github.ixtf.vertx.JvertxOptions;
 import com.github.ixtf.vertx.VerticleRepresentation;
 import com.github.ixtf.vertx.graphql.GraphQLMutation;
 import com.github.ixtf.vertx.graphql.GraphQLQuery;
@@ -58,16 +57,8 @@ public class GraphQLVerticleRepresentation implements VerticleRepresentation {
 
     @Override
     public Future<String> deploy(Vertx vertx) {
-        return Future.future(promise -> vertx.deployVerticle(V.class, deploymentOptions(), promise));
-    }
-
-    public DeploymentOptions deploymentOptions() {
         final DeploymentOptions deploymentOptions = new DeploymentOptions().setWorker(true);
-        final JvertxOptions jvertxOptions = method.getAnnotation(JvertxOptions.class);
-        if (jvertxOptions != null) {
-            deploymentOptions.setInstances(jvertxOptions.instances());
-        }
-        return deploymentOptions;
+        return Future.future(p -> vertx.deployVerticle(V.class, deploymentOptions, p));
     }
 
     public class V extends AbstractVerticle {

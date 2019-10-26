@@ -36,7 +36,7 @@ public class Envelope {
         this(data, new DeliveryOptions());
     }
 
-    public static Mono<Object> toMessage(Object o) {
+    private static Mono<Object> toMessage(Object o) {
         if (o == null || o instanceof String || o instanceof byte[]) {
             return Mono.justOrEmpty(o);
         }

@@ -1,6 +1,5 @@
 package com.github.ixtf.vertx;
 
-import io.vertx.core.DeploymentOptions;
 import io.vertx.core.eventbus.DeliveryOptions;
 
 import java.lang.annotation.*;
@@ -18,10 +17,5 @@ public @interface JvertxOptions {
      */
     long timeout() default DeliveryOptions.DEFAULT_TIMEOUT;
 
-    /**
-     * @return 超时，毫秒
-     */
-    int instances() default DeploymentOptions.DEFAULT_INSTANCES;
-
-    String apmService() default "";
+    boolean apm() default false;
 }

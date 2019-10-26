@@ -3,8 +3,13 @@ package com.github.ixtf.vertx.route;
 import com.github.ixtf.japp.core.J;
 import com.github.ixtf.vertx.Envelope;
 import com.github.ixtf.vertx.JvertxOptions;
+import com.github.ixtf.vertx.apm.RCTextMapExtractAdapter;
 import io.opentracing.Span;
+import io.opentracing.SpanContext;
+import io.opentracing.Tracer;
 import io.opentracing.tag.Tags;
+import io.vertx.core.AbstractVerticle;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.eventbus.DeliveryOptions;
 import io.vertx.core.eventbus.Message;
@@ -19,15 +24,19 @@ import reactor.core.publisher.Mono;
 import javax.validation.*;
 import javax.validation.executable.ExecutableValidator;
 import java.lang.reflect.Method;
+import java.security.Principal;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+
+import static io.opentracing.propagation.Format.Builtin.TEXT_MAP;
 
 /**
  * @author jzb 2019-02-14
  */
 @Slf4j
-@EqualsAndHashCode(onlyExplicitlyIncluded = true)
-public class RouteRepresentationConsumer implements Handler<Message<JsonObject>> {
+@EqualsAndHashCode(callSuper = false, onlyExplicitlyIncluded = true)
+public class RouteRepresentationConsumer extends AbstractVerticle implements Handler<Message<JsonObject>> {
     @EqualsAndHashCode.Include
     private final RouteRepresentation routeRepresentation;
     private final Function<Class, Object> proxyFun;
@@ -35,12 +44,18 @@ public class RouteRepresentationConsumer implements Handler<Message<JsonObject>>
     private final Function<JsonObject, Object[]> argsFun;
     private final JvertxOptions jvertxOptions;
 
-    RouteRepresentationConsumer(RouteRepresentation routeRepresentation, Function<Class, Object> proxyFun, Function<JsonObject, Object[]> argsFun) {
+    RouteRepresentationConsumer(RouteRepresentation routeRepresentation, Function<Class, Object> proxyFun, Function<JsonObject, Principal> principalFun) {
         this.routeRepresentation = routeRepresentation;
         this.proxyFun = proxyFun;
-        this.argsFun = argsFun;
+        this.argsFun = RoutingContextEnvelope.argsFun(routeRepresentation.getMethod(), principalFun);
         proxy = proxyFun.compose(Method::getDeclaringClass).apply(routeRepresentation.getMethod());
         jvertxOptions = routeRepresentation.getAnnotation(JvertxOptions.class);
+    }
+
+    @Override
+    public void start(Future<Void> startFuture) throws Exception {
+        super.start();
+        vertx.eventBus().consumer(routeRepresentation.getAddress(), this).completionHandler(startFuture);
     }
 
     @SneakyThrows
@@ -68,36 +83,35 @@ public class RouteRepresentationConsumer implements Handler<Message<JsonObject>>
         }).subscribe(pair -> {
             final DeliveryOptions deliveryOptions = pair.getValue();
             final Object message = pair.getKey();
-            reply.reply(message, deliveryOptions);
             apmSuccess(span, reply, message, deliveryOptions);
+            reply.reply(message, deliveryOptions);
         }, err -> {
-            reply.fail(400, err.getLocalizedMessage());
             apmError(span, reply, err);
+            reply.fail(400, err.getLocalizedMessage());
         });
     }
 
     private Span initApm(Message<JsonObject> reply) {
-        return null;
-
-//        if (apm == null) {
-//            return null;
-//        }
-//        try {
-//            final String apmService = StringUtils.defaultIfBlank(apm.service(), "worker");
-//            final Tracer tracer = Jvertx.initTracer(apmService);
-//            final SpanContext spanContext = tracer.extract(TEXT_MAP, new RCTextMapExtractAdapter(reply));
-//            final Tracer.SpanBuilder spanBuilder = tracer.buildSpan(routeRepresentation.getPath())
-//                    .withTag(Tags.COMPONENT, proxy.getClass().getName())
-//                    .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CONSUMER)
-//                    .withTag(Tags.MESSAGE_BUS_DESTINATION, routeRepresentation.getAddress());
-//            if (spanContext != null) {
-//                spanBuilder.asChildOf(spanContext);
-//            }
-//            return spanBuilder.start();
-//        } catch (Throwable e) {
-//            log.error("apm tracer not found", e);
-//            return null;
-//        }
+        try {
+            return Optional.ofNullable(jvertxOptions)
+                    .filter(JvertxOptions::apm)
+                    .map(service -> {
+                        final Tracer tracer = (Tracer) proxyFun.apply(Tracer.class);
+                        final SpanContext spanContext = tracer.extract(TEXT_MAP, new RCTextMapExtractAdapter(reply));
+                        final Tracer.SpanBuilder spanBuilder = tracer.buildSpan(routeRepresentation.getPath())
+                                .withTag(Tags.COMPONENT, proxy.getClass().getName())
+                                .withTag(Tags.SPAN_KIND, Tags.SPAN_KIND_CONSUMER)
+                                .withTag(Tags.MESSAGE_BUS_DESTINATION, routeRepresentation.getAddress());
+                        if (spanContext != null) {
+                            spanBuilder.asChildOf(spanContext);
+                        }
+                        return spanBuilder.start();
+                    })
+                    .orElse(null);
+        } catch (Throwable err) {
+            log.error("apm tracer not found", err);
+            return null;
+        }
     }
 
     private void apmSuccess(Span span, Message<JsonObject> reply, Object message, DeliveryOptions deliveryOptions) {

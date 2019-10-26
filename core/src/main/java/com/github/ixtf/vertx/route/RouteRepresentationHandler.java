@@ -103,8 +103,7 @@ public class RouteRepresentationHandler implements Handler<RoutingContext> {
     private Span initApm(RoutingContext rc, DeliveryOptions deliveryOptions) {
         try {
             return Optional.ofNullable(jvertxOptions)
-                    .map(JvertxOptions::apmService)
-                    .filter(J::nonBlank)
+                    .filter(JvertxOptions::apm)
                     .map(service -> {
                         final Tracer tracer = (Tracer) proxyFun.apply(Tracer.class);
                         final HttpServerRequest request = rc.request();

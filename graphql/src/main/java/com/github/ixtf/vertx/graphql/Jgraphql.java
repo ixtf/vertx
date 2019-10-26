@@ -1,5 +1,6 @@
 package com.github.ixtf.vertx.graphql;
 
+import com.github.ixtf.vertx.graphql.coercing.EntityDTOCoercing;
 import com.github.ixtf.vertx.graphql.coercing.LocalDateCoercing;
 import com.github.ixtf.vertx.graphql.coercing.LocalDateTimeCoercing;
 import graphql.schema.GraphQLScalarType;
@@ -20,6 +21,12 @@ public class Jgraphql {
             .name("LocalDateTime")
             .description("Jgraphql LocalDateTime")
             .coercing(new LocalDateTimeCoercing())
+            .build();
+    @Getter(lazy = true)
+    private static final GraphQLScalarType GraphQLMap = GraphQLScalarType.newScalar()
+            .name("EntityDTO")
+            .description("Jgraphql EntityDTO")
+            .coercing(new EntityDTOCoercing())
             .build();
 
     public static String typeName(Object input) {
