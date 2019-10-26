@@ -6,6 +6,7 @@ import com.google.common.reflect.ClassPath;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -41,7 +42,7 @@ public abstract class VerticleRepresentationResolver {
                 .distinct();
     }
 
-    @SneakyThrows
+    @SneakyThrows(IOException.class)
     synchronized protected ClassPath classPath() {
         if (classPath == null) {
             classPath = ClassPath.from(classLoader());

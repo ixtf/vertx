@@ -6,6 +6,7 @@ import com.google.common.reflect.ClassPath;
 import lombok.SneakyThrows;
 import org.apache.commons.lang3.StringUtils;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Set;
 import java.util.function.Predicate;
@@ -41,7 +42,7 @@ public abstract class RepresentationResolver<T> {
                 .filter(classFilter());
     }
 
-    @SneakyThrows
+    @SneakyThrows(IOException.class)
     synchronized protected ClassPath classPath() {
         if (classPath == null) {
             classPath = ClassPath.from(classLoader());

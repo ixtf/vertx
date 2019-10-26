@@ -1,5 +1,6 @@
 package com.github.ixtf.vertx;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.ixtf.japp.core.Constant;
 import com.github.ixtf.japp.core.J;
 import com.github.ixtf.japp.core.exception.JError;
@@ -72,13 +73,12 @@ public final class Jvertx {
         response.end(result.encode());
     }
 
-    @SneakyThrows
+    @SneakyThrows(JsonProcessingException.class)
     public static <T> T checkAndGetCommand(Class<T> clazz, String json) {
         final T command = MAPPER.readValue(json, clazz);
         return checkAndGetCommand(command);
     }
 
-    @SneakyThrows
     public static <T> T checkAndGetCommand(T command) {
         final ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
         final Validator validator = validatorFactory.getValidator();

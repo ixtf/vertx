@@ -17,6 +17,7 @@ import lombok.SneakyThrows;
 import reactor.core.publisher.Mono;
 import reactor.core.scheduler.Schedulers;
 
+import java.io.IOException;
 import java.net.URL;
 import java.util.Objects;
 
@@ -62,7 +63,7 @@ public class JgraphqlModule extends AbstractModule {
                 }).build();
     }
 
-    @SneakyThrows
+    @SneakyThrows(IOException.class)
     protected String loadSdl(String fileName) {
         final URL url = Resources.getResource(fileName);
         return Resources.toString(url, UTF_8);

@@ -23,6 +23,7 @@ import reactor.core.publisher.Mono;
 
 import javax.validation.*;
 import javax.validation.executable.ExecutableValidator;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.security.Principal;
 import java.util.Optional;
@@ -58,7 +59,7 @@ public class RouteRepresentationConsumer extends AbstractVerticle implements Han
         vertx.eventBus().consumer(routeRepresentation.getAddress(), this).completionHandler(startFuture);
     }
 
-    @SneakyThrows
+    @SneakyThrows({NoSuchMethodException.class, IllegalAccessException.class, InvocationTargetException.class})
     public static Object checkAndInvoke(Object proxy, Method method, Object[] args) {
         final ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
         final Validator validator = validatorFactory.getValidator();
@@ -115,20 +116,18 @@ public class RouteRepresentationConsumer extends AbstractVerticle implements Han
     }
 
     private void apmSuccess(Span span, Message<JsonObject> reply, Object message, DeliveryOptions deliveryOptions) {
-        if (span == null) {
-            return;
+        if (span != null) {
+            span.setTag(Tags.ERROR, false);
+            span.finish();
         }
-        span.setTag(Tags.ERROR, false);
-        span.finish();
     }
 
     private void apmError(Span span, Message<JsonObject> reply, Throwable err) {
-        if (span == null) {
-            return;
+        if (span != null) {
+            span.setTag(Tags.ERROR, true);
+            span.log(err.getLocalizedMessage());
+            span.finish();
         }
-        span.setTag(Tags.ERROR, true);
-        span.log(err.getLocalizedMessage());
-        span.finish();
     }
 
 }
