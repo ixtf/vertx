@@ -1,70 +1,60 @@
 package com.github.ixtf.vertx;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.ixtf.japp.core.Constant;
-import com.github.ixtf.japp.core.exception.JException;
-import com.github.ixtf.japp.core.exception.JMultiException;
-import com.github.ixtf.vertx.api.ResourceRepresentation;
-import com.github.ixtf.vertx.api.RouteRepresentation;
-import com.github.ixtf.vertx.spi.ResourceProvider;
-import com.google.common.collect.Sets;
+import com.github.ixtf.japp.core.J;
+import com.github.ixtf.japp.core.exception.JError;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import io.vertx.core.Handler;
+import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.json.JsonArray;
+import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonObject;
-import io.vertx.reactivex.core.http.HttpServerResponse;
-import io.vertx.reactivex.ext.web.Router;
-import io.vertx.reactivex.ext.web.RoutingContext;
-import io.vertx.reactivex.ext.web.handler.*;
-import io.vertx.reactivex.ext.web.sstore.SessionStore;
+import io.vertx.ext.web.Router;
+import io.vertx.ext.web.RoutingContext;
+import io.vertx.ext.web.handler.BodyHandler;
+import io.vertx.ext.web.handler.CorsHandler;
+import io.vertx.ext.web.handler.ResponseContentTypeHandler;
+import lombok.SneakyThrows;
 
-import javax.validation.ConstraintViolation;
-import javax.validation.Validation;
-import javax.validation.Validator;
-import javax.validation.ValidatorFactory;
-import java.io.IOException;
-import java.util.*;
-import java.util.stream.Collectors;
+import javax.validation.*;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import static com.github.ixtf.japp.core.Constant.MAPPER;
-import static java.util.stream.Collectors.collectingAndThen;
-import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.*;
 
 /**
  * @author jzb 2019-02-16
  */
 public final class Jvertx {
+    public static final String API = "API";
 
-    public static void enableCommon(Router router) {
-        router.route().handler(BodyHandler.create());
-        router.route().handler(ResponseContentTypeHandler.create());
-        router.route().handler(CookieHandler.create());
-    }
+    private static final LoadingCache<Class<? extends RepresentationResolver>, Collection<?>> RESOLVER_CACHE = CacheBuilder.newBuilder()
+            .expireAfterWrite(1, TimeUnit.MINUTES)
+            .build(new CacheLoader<>() {
+                @Override
+                public Collection<?> load(Class<? extends RepresentationResolver> resolverClass) throws Exception {
+                    final RepresentationResolver<?> resolver = resolverClass.getDeclaredConstructor().newInstance();
+                    return resolver.resolve().collect(toList());
+                }
+            });
 
-    public static void enableCommon(Router router, SessionStore sessionStore) {
-        enableCommon(router);
-        router.route().handler(SessionHandler.create(sessionStore));
-    }
-
-    public static void enableCors(Router router, Set<String> domains) {
-        final Collection<String> patterns = Sets.newHashSet("localhost", "127\\.0\\.0\\.1");
-        patterns.addAll(domains);
-        final String domainP = patterns.stream().collect(Collectors.joining("|"));
-        router.route().handler(CorsHandler.create("^http(s)?://(" + domainP + ")(:[1-9]\\d+)?")
-                .allowCredentials(false)
-                .allowedHeader("x-requested-with")
-                .allowedHeader("access-control-allow-origin")
-                .allowedHeader("origin")
-                .allowedHeader("content-type")
-                .allowedHeader("accept")
-                .allowedHeader("authorization")
-                .allowedMethod(HttpMethod.POST)
-                .allowedMethod(HttpMethod.PUT)
-                .allowedMethod(HttpMethod.PATCH)
-                .allowedMethod(HttpMethod.GET)
-                .allowedMethod(HttpMethod.DELETE)
-                .allowedMethod(HttpMethod.HEAD)
-                .allowedMethod(HttpMethod.OPTIONS));
+    public static <T> Stream<T> resolve(Class<? extends RepresentationResolver<T>>... classes) {
+        return Arrays.stream(classes).parallel().flatMap(it -> {
+            try {
+                final Collection<T> collection = (Collection<T>) RESOLVER_CACHE.get(it);
+                return collection.parallelStream();
+            } catch (ExecutionException e) {
+                throw new RuntimeException(e);
+            }
+        }).distinct();
     }
 
     public static void failureHandler(RoutingContext rc) {
@@ -72,75 +62,55 @@ public final class Jvertx {
         final Throwable failure = rc.failure();
         final JsonObject result = new JsonObject();
         // todo response content-type 为 json
-        if (failure instanceof JMultiException) {
-            final JMultiException ex = (JMultiException) failure;
-            final JsonArray errors = new JsonArray();
-            result.put("errorCode", Constant.ErrorCode.MULTI)
-                    .put("errors", errors);
-            ex.getExceptions().forEach(it -> {
-                final JsonObject error = new JsonObject()
-                        .put("errorCode", it.getErrorCode())
-                        .put("errorMessage", it.getMessage());
-                errors.add(error);
-            });
-        } else if (failure instanceof JException) {
-            final JException ex = (JException) failure;
+        if (failure instanceof JError) {
+            final JError ex = (JError) failure;
             result.put("errorCode", ex.getErrorCode())
                     .put("errorMessage", ex.getMessage());
         } else {
             result.put("errorCode", Constant.ErrorCode.SYSTEM)
-                    .put("errorMessage", failure.getLocalizedMessage());
+                    .put("errorMessage", failure.getMessage());
         }
         response.end(result.encode());
     }
 
-    public static <T> T readCommand(Class<T> clazz, String json) throws IOException, JException {
+    @SneakyThrows(JsonProcessingException.class)
+    public static <T> T checkAndGetCommand(Class<T> clazz, String json) {
         final T command = MAPPER.readValue(json, clazz);
-        return checkCommand(command);
+        return checkAndGetCommand(command);
     }
 
-    public static <T> T checkCommand(T command) throws JException {
+    public static <T> T checkAndGetCommand(T command) {
         final ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory();
         final Validator validator = validatorFactory.getValidator();
-        final Set<ConstraintViolation<T>> violations = validator.validate(command);
-        if (violations.size() == 0) {
-            return command;
+        final Set<ConstraintViolation<Object>> violations = validator.validate(command);
+        if (J.nonEmpty(violations)) {
+            throw new ConstraintViolationException(violations);
         }
-        final List<JException> exceptions = violations.stream().map(violation -> {
-            final String propertyPath = violation.getPropertyPath().toString();
-            return new JException(Constant.ErrorCode.SYSTEM, propertyPath + ":" + violation.getMessage());
-        }).collect(toList());
-        if (violations.size() == 1) {
-            throw exceptions.get(0);
-        }
-        throw new JMultiException(exceptions);
+        return command;
     }
 
-    public static Stream<RouteRepresentation> routes() {
-        return resources().flatMap(ResourceRepresentation::routes);
+    public static Router router(Vertx vertx, CorsConfig corsConfig) {
+        return router(vertx, corsConfig, Jvertx::failureHandler);
     }
 
-    public static Stream<ResourceRepresentation> resources() {
-        return Holder.RESOURCE_PROVIDERS.list().flatMap(ResourceProvider::listResources);
+    public static Router router(Vertx vertx, CorsConfig corsConfig, Handler<RoutingContext> failureHandler) {
+        final Router router = Router.router(vertx);
+        router.route().handler(BodyHandler.create());
+        router.route().handler(ResponseContentTypeHandler.create());
+        final String domainP = Stream.concat(
+                Stream.of("localhost", "127\\.0\\.0\\.1").parallel(),
+                J.emptyIfNull(corsConfig.getDomainPatterns()).parallelStream()
+        ).collect(joining("|"));
+        final Set<String> allowedHeaders = Stream.concat(
+                Stream.of("authorization", "origin", "accept", "content-type", "access-control-allow-origin").parallel(),
+                J.emptyIfNull(corsConfig.getAllowedHeaders()).parallelStream()
+        ).collect(toSet());
+        router.route().handler(CorsHandler.create("^http(s)?://(" + domainP + ")(:[1-9]\\d+)?")
+                .allowCredentials(corsConfig.isAllowCredentials())
+                .allowedMethods(Set.of(HttpMethod.values()))
+                .allowedHeaders(allowedHeaders));
+        router.route().failureHandler(failureHandler);
+        return router;
     }
 
-    private static class Holder {
-        private static final RouteProviderProviderRegistry RESOURCE_PROVIDERS = new RouteProviderProviderRegistry();
-    }
-
-    private static class RouteProviderProviderRegistry {
-        private final List<ResourceProvider> resourceProviders;
-
-        private RouteProviderProviderRegistry() {
-            resourceProviders = StreamSupport.stream(ServiceLoader.load(ResourceProvider.class).spliterator(), false)
-                    .collect(collectingAndThen(toList(), Collections::unmodifiableList));
-        }
-
-        private Stream<ResourceProvider> list() {
-            return resourceProviders.stream();
-        }
-    }
-
-    private Jvertx() {
-    }
 }

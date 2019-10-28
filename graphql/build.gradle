@@ -1,0 +1,4 @@
+dependencies {
+    compile project(":core"),
+            "io.vertx:vertx-web-graphql"
+}

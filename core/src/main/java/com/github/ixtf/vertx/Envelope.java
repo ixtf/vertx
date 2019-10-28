@@ -1,10 +1,14 @@
 package com.github.ixtf.vertx;
 
+import io.vertx.core.buffer.Buffer;
 import io.vertx.core.eventbus.DeliveryOptions;
-import io.vertx.reactivex.core.eventbus.Message;
-import lombok.SneakyThrows;
+import io.vertx.core.shareddata.impl.ClusterSerializable;
+import lombok.Getter;
+import reactor.core.publisher.Flux;
+import reactor.core.publisher.Mono;
 
 import java.util.Optional;
+import java.util.concurrent.CompletionStage;
 
 import static com.github.ixtf.japp.core.Constant.MAPPER;
 
@@ -12,60 +16,64 @@ import static com.github.ixtf.japp.core.Constant.MAPPER;
  * @author jzb 2019-02-28
  */
 public class Envelope {
-    private Object data;
-    private DeliveryOptions deliveryOptions = new DeliveryOptions();
-    private boolean hasError;
-    private String errorMessage;
+    @Getter
+    private final Object data;
+    @Getter
+    private final DeliveryOptions deliveryOptions;
 
-    private Envelope() {
+    public Envelope(Object data, DeliveryOptions deliveryOptions) {
+        this.data = data;
+        this.deliveryOptions = deliveryOptions;
     }
 
-    public static Envelope whenComplete(Object data, Throwable throwable) {
-        final Envelope envelope = data(data);
-        if (throwable != null) {
-            envelope.hasError = true;
-            envelope.errorMessage = throwable.getLocalizedMessage();
-        }
-        return envelope;
+    public Envelope(Envelope envelope) {
+        this(envelope.data, envelope.deliveryOptions);
     }
 
-    @SneakyThrows
-    public static Envelope data(Object data) {
-        if (data instanceof Envelope) {
-            return (Envelope) data;
-        }
-        if (data instanceof Optional) {
-            final Optional optional = (Optional) data;
-            return Envelope.data(optional.orElse(null));
-        }
-        final Envelope envelope = new Envelope();
-        if (data == null) {
-            envelope.data = null;
-        } else if (data instanceof String || data instanceof byte[]) {
-            envelope.data = data;
-        } else {
-            envelope.data = MAPPER.writeValueAsString(data);
-        }
-        return envelope;
-    }
-
-    public static Envelope error(Throwable throwable) {
-        final Envelope envelope = new Envelope();
-        envelope.hasError = true;
-        envelope.errorMessage = throwable.getLocalizedMessage();
-        return envelope;
-    }
-
-    public void reply(Message<Object> reply) {
-        if (hasError) {
-            reply.fail(400, errorMessage);
-        } else {
-            reply.reply(data, deliveryOptions);
-        }
+    public Envelope(Object data) {
+        this(data, new DeliveryOptions());
     }
 
     public Envelope putHeader(String name, String value) {
         deliveryOptions.addHeader(name, value);
         return this;
     }
+
+    public Mono<Object> toMessage() {
+        return toMessage(data);
+    }
+
+    private static Mono<Object> toMessage(Object o) {
+        if (o == null || o instanceof String || o instanceof byte[]) {
+            return Mono.justOrEmpty(o);
+        }
+        if (o instanceof ClusterSerializable) {
+            final ClusterSerializable clusterSerializable = (ClusterSerializable) o;
+            final Buffer buffer = Buffer.buffer();
+            clusterSerializable.writeToBuffer(buffer);
+            return Mono.justOrEmpty(buffer.getBytes());
+        }
+        if (o instanceof Envelope) {
+            final Envelope envelope = (Envelope) o;
+            return envelope.toMessage();
+        }
+        if (o instanceof Optional) {
+            final Optional optional = (Optional) o;
+            return Mono.justOrEmpty(optional).flatMap(Envelope::toMessage);
+        }
+        if (o instanceof Mono) {
+            final Mono mono = (Mono) o;
+            return mono.flatMap(Envelope::toMessage);
+        }
+        if (o instanceof Flux) {
+            final Flux flux = (Flux) o;
+            return flux.collectList().flatMap(Envelope::toMessage);
+        }
+        if (o instanceof CompletionStage) {
+            final CompletionStage completionStage = (CompletionStage) o;
+            return Mono.fromCompletionStage(completionStage).flatMap(Envelope::toMessage);
+        }
+        return Mono.fromCallable(() -> MAPPER.writeValueAsString(o));
+    }
+
 }

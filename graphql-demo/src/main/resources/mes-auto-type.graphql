@@ -1,0 +1,16 @@
+scalar Long
+scalar LocalDate
+scalar LocalDateTime
+
+type Operator {
+    id: ID!
+    name: String
+    birthDate: LocalDate
+    cdt: LocalDateTime
+}
+type OperatorQuery {
+    first: Long
+    pageSize: Int
+    count: Long
+    operators: [Operator]
+}

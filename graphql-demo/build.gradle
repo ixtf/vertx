@@ -1,0 +1,4 @@
+dependencies {
+    compile project(':graphql'),
+            'com.github.ixtf.persistence:mongo'
+}

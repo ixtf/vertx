@@ -1,0 +1,19 @@
+plugins {
+    id "io.swagger.core.v3.swagger-gradle-plugin" version "2.0.8"
+}
+
+resolve {
+    outputFormat = 'YAML'
+    outputPath = '/home/jzb/git/com.github.ixtf.vertx/jax-rs-demo/docs'
+    classpath = sourceSets.main.runtimeClasspath
+    resourcePackages = ['com.github.ixtf.jax.rs.demo.rest']
+    openApiFile = file('/home/jzb/git/com.github.ixtf.vertx/jax-rs-demo/docs/openapi-base.yaml')
+}
+
+dependencies {
+    compile project(':jax-rs'),
+            'com.github.ixtf.persistence:mongo',
+            'io.vertx:vertx-redis-client'
+
+    compile group: 'io.swagger.core.v3', name: 'swagger-annotations', version: '2.0.8'
+}

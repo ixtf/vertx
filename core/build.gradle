@@ -1,0 +1,4 @@
+dependencies {
+    compile "javax:javaee-api",
+            "com.google.inject:guice"
+}

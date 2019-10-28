@@ -1,23 +1,22 @@
 plugins {
-    id 'io.spring.dependency-management' version '1.0.7.RELEASE'
-    id 'io.franzbecker.gradle-lombok' version '2.2'
-    id 'com.palantir.docker' version "0.22.0"
-    id 'com.github.johnrengelman.shadow' version '5.0.0'
+    id "io.spring.dependency-management" version "1.0.7.RELEASE"
+    id "io.franzbecker.gradle-lombok" version "3.0.0"
 }
 allprojects {
-    group 'com.github.ixtf.vertx'
-    version '1.0'
+    group "com.github.ixtf.vertx"
+    version "1.0"
 
-    apply plugin: 'idea'
-    apply plugin: 'maven'
-    apply plugin: 'maven-publish'
+    apply plugin: "idea"
+    apply plugin: "maven"
+    apply plugin: "maven-publish"
     apply plugin: "io.spring.dependency-management"
+    apply plugin: "io.franzbecker.gradle-lombok"
 
     repositories {
         mavenLocal()
         mavenCentral()
-        maven { url 'https://plugins.gradle.org/m2' }
-        maven { url 'https://jitpack.io' }
+        maven { url "https://plugins.gradle.org/m2" }
+        maven { url "https://jitpack.io" }
     }
 
     dependencyManagement {
@@ -27,27 +26,18 @@ allprojects {
     }
 }
 subprojects {
-    apply plugin: 'java'
+    apply plugin: "java"
     sourceCompatibility = 11
     targetCompatibility = 11
-    apply plugin: 'io.franzbecker.gradle-lombok'
-    lombok {
-        version = "${lombokVersion}"
-        sha256 = ""
-    }
 
     dependencies {
         compile "com.github.ixtf.japp:codec",
-                "io.vertx:vertx-rx-java2",
-                "io.vertx:vertx-hazelcast",
-                "io.vertx:vertx-reactive-streams",
                 "io.vertx:vertx-web",
                 "io.vertx:vertx-config-yaml",
-                "io.vertx:vertx-service-discovery",
-                "io.vertx:vertx-circuit-breaker",
-                "io.vertx:vertx-service-proxy",
+                "io.vertx:vertx-hazelcast",
                 "io.vertx:vertx-health-check",
-                "io.vertx:vertx-dropwizard-metrics",
+                "io.projectreactor:reactor-core",
+                "io.jaegertracing:jaeger-client:1.0.0",
 
                 "javax:javaee-api",
                 "org.hibernate.validator:hibernate-validator",
@@ -55,25 +45,25 @@ subprojects {
 
         compileOnly "io.vertx:vertx-codegen"
 
-        testCompile "junit:junit",
+        testCompile "org.junit.jupiter:junit-jupiter-engine:5.4.2",
                 "io.vertx:vertx-unit",
                 "io.vertx:vertx-web-client"
     }
 
     jar.manifest {
         attributes(
-                'Implementation-Title': name,
-                'Implementation-Version': version,
-                'Built-By': System.getProperty('user.name'),
-                'Built-JDK': System.getProperty('java.version'),
-                'Source-Compatibility': sourceCompatibility,
-                'Target-Compatibility': targetCompatibility
+                "Implementation-Title": name,
+                "Implementation-Version": version,
+                "Built-By": System.getProperty("user.name"),
+                "Built-JDK": System.getProperty("java.version"),
+                "Source-Compatibility": sourceCompatibility,
+                "Target-Compatibility": targetCompatibility
         )
     }
     [compileJava, compileTestJava].each() {
 //        it.options.compilerArgs += ["-Xlint:all", "-Xlint:-options", "-Xlint:-path"]
         it.options.encoding = "UTF-8"
-        if (rootProject.hasProperty('failOnWarnings') && rootProject.failOnWarnings.toBoolean()) {
+        if (rootProject.hasProperty("failOnWarnings") && rootProject.failOnWarnings.toBoolean()) {
             it.options.compilerArgs += ["-Werror"]
         }
     }
@@ -82,16 +72,16 @@ subprojects {
         options.compilerArgs += ["-Xlint:-serial"]
     }
     javadoc.options {
-        encoding = 'UTF-8'
+        encoding = "UTF-8"
         use = true
-//        links 'https://docs.oracle.com/javase/8/docs/api/'
+//        links "https://docs.oracle.com/javase/8/docs/api/"
     }
     task javadocJar(type: Jar) {
-        classifier = 'javadoc'
+        classifier = "javadoc"
         from javadoc
     }
     task sourcesJar(type: Jar) {
-        classifier = 'sources'
+        classifier = "sources"
         from sourceSets.main.allSource
     }
     artifacts {
