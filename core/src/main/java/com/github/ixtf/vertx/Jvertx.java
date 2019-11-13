@@ -18,6 +18,7 @@ import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.ResponseContentTypeHandler;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.validation.*;
 import java.util.Arrays;
@@ -33,6 +34,7 @@ import static java.util.stream.Collectors.*;
 /**
  * @author jzb 2019-02-16
  */
+@Slf4j
 public final class Jvertx {
     public static final String API = "API";
 
@@ -67,6 +69,7 @@ public final class Jvertx {
             result.put("errorCode", ex.getErrorCode())
                     .put("errorMessage", ex.getMessage());
         } else {
+            log.error("", failure);
             result.put("errorCode", Constant.ErrorCode.SYSTEM)
                     .put("errorMessage", failure.getMessage());
         }
