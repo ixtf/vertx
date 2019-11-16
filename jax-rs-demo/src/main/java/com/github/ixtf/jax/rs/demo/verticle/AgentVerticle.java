@@ -3,7 +3,6 @@ package com.github.ixtf.jax.rs.demo.verticle;
 import com.github.ixtf.vertx.CorsConfig;
 import com.github.ixtf.vertx.Jvertx;
 import com.github.ixtf.vertx.ws.rs.JaxRsRouteResolver;
-import com.google.common.collect.Sets;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.Future;
 import io.vertx.core.http.HttpServer;
@@ -11,8 +10,6 @@ import io.vertx.core.http.HttpServerOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.redis.client.Redis;
 import io.vertx.redis.client.RedisOptions;
-
-import java.util.Set;
 
 import static com.github.ixtf.jax.rs.demo.DemoModule.INJECTOR;
 
@@ -23,7 +20,7 @@ public class AgentVerticle extends AbstractVerticle {
 
     @Override
     public void start(Future<Void> startFuture) throws Exception {
-        final Router router = Jvertx.router(vertx, new CorsConfig());
+        final Router router = Jvertx.router(vertx, CorsConfig.builder().build());
 
         final Redis redis = Redis.createClient(vertx, new RedisOptions());
 
@@ -51,13 +48,9 @@ public class AgentVerticle extends AbstractVerticle {
     public static class AgentResolver extends JaxRsRouteResolver {
 
         @Override
-        protected Set<String> getPackages() {
-            return Sets.newHashSet("com.github.ixtf.jax.rs.demo");
+        protected String[] getPackages() {
+            return new String[]{"com.github.ixtf.jax.rs.demo"};
         }
 
-        @Override
-        protected Set<Class> getClasses() {
-            return null;
-        }
     }
 }

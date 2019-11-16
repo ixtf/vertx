@@ -1,12 +1,11 @@
 package com.github.ixtf.vertx;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.github.benmanes.caffeine.cache.Caffeine;
+import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.ixtf.japp.core.Constant;
 import com.github.ixtf.japp.core.J;
 import com.github.ixtf.japp.core.exception.JError;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
@@ -18,44 +17,35 @@ import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.ResponseContentTypeHandler;
 import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 
 import javax.validation.*;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static com.github.ixtf.japp.core.Constant.MAPPER;
-import static java.util.stream.Collectors.*;
+import static java.util.stream.Collectors.joining;
+import static java.util.stream.Collectors.toSet;
 
 /**
  * @author jzb 2019-02-16
  */
-@Slf4j
 public final class Jvertx {
     public static final String API = "API";
 
-    private static final LoadingCache<Class<? extends RepresentationResolver>, Collection<?>> RESOLVER_CACHE = CacheBuilder.newBuilder()
+    private static final LoadingCache<Class<? extends RepresentationResolver>, Collection<?>> RESOLVER_CACHE = Caffeine.newBuilder()
             .expireAfterWrite(1, TimeUnit.MINUTES)
-            .build(new CacheLoader<>() {
-                @Override
-                public Collection<?> load(Class<? extends RepresentationResolver> resolverClass) throws Exception {
-                    final RepresentationResolver<?> resolver = resolverClass.getDeclaredConstructor().newInstance();
-                    return resolver.resolve().collect(toList());
-                }
+            .build(resolverClass -> {
+                final RepresentationResolver<?> resolver = resolverClass.getDeclaredConstructor().newInstance();
+                return resolver.resolve();
             });
 
     public static <T> Stream<T> resolve(Class<? extends RepresentationResolver<T>>... classes) {
         return Arrays.stream(classes).parallel().flatMap(it -> {
-            try {
-                final Collection<T> collection = (Collection<T>) RESOLVER_CACHE.get(it);
-                return collection.parallelStream();
-            } catch (ExecutionException e) {
-                throw new RuntimeException(e);
-            }
+            final Collection<T> collection = (Collection<T>) RESOLVER_CACHE.get(it);
+            return collection.parallelStream();
         }).distinct();
     }
 
@@ -69,7 +59,6 @@ public final class Jvertx {
             result.put("errorCode", ex.getErrorCode())
                     .put("errorMessage", ex.getMessage());
         } else {
-            log.error("", failure);
             result.put("errorCode", Constant.ErrorCode.SYSTEM)
                     .put("errorMessage", failure.getMessage());
         }

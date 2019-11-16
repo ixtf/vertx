@@ -1,10 +1,10 @@
 package openssl;
 
+import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.auth.PubSecKeyOptions;
+import io.vertx.ext.auth.jwt.JWTAuth;
 import io.vertx.ext.auth.jwt.JWTAuthOptions;
-import io.vertx.reactivex.core.Vertx;
-import io.vertx.reactivex.ext.auth.jwt.JWTAuth;
 
 import javax.crypto.KeyGenerator;
 import javax.crypto.SecretKey;

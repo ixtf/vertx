@@ -1,6 +1,7 @@
 package com.github.ixtf.vertx.route;
 
 import com.github.ixtf.japp.core.J;
+import com.github.ixtf.japp.core.exception.JError;
 import com.github.ixtf.vertx.Envelope;
 import com.github.ixtf.vertx.JvertxOptions;
 import com.github.ixtf.vertx.apm.RCTextMapExtractAdapter;
@@ -20,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.reflect.MethodUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import reactor.core.publisher.Mono;
+import reactor.core.scheduler.Schedulers;
 
 import javax.validation.*;
 import javax.validation.executable.ExecutableValidator;
@@ -78,7 +80,7 @@ public class RouteRepresentationConsumer extends AbstractVerticle implements Han
             final Object[] args = argsFun.apply(reply.body());
             final Object ret = checkAndInvoke(proxy, routeRepresentation.getMethod(), args);
             return new Envelope(ret);
-        }).flatMap(envelope -> {
+        }).subscribeOn(Schedulers.elastic()).flatMap(envelope -> {
             final DeliveryOptions deliveryOptions = envelope.getDeliveryOptions();
             return envelope.toMessage().defaultIfEmpty("").map(it -> Pair.of(it, deliveryOptions));
         }).subscribe(pair -> {
@@ -123,11 +125,26 @@ public class RouteRepresentationConsumer extends AbstractVerticle implements Han
     }
 
     private void apmError(Span span, Message<JsonObject> reply, Throwable err) {
+        final boolean needLog = needLog(err);
+        if (needLog) {
+            log.error("", err);
+        }
         if (span != null) {
             span.setTag(Tags.ERROR, true);
             span.log(err.getLocalizedMessage());
             span.finish();
         }
+    }
+
+    private boolean needLog(Throwable err) {
+        if (err instanceof JError || err instanceof ValidationException) {
+            return false;
+        }
+        if (err instanceof InvocationTargetException) {
+            final InvocationTargetException invocationTargetException = (InvocationTargetException) err;
+            return needLog(invocationTargetException.getTargetException());
+        }
+        return true;
     }
 
 }
