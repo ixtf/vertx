@@ -9,5 +9,5 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 public @interface GraphQLQuery {
-    String value();
+    String value() default "";
 }

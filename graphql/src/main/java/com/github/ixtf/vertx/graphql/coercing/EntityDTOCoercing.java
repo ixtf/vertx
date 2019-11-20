@@ -12,27 +12,18 @@ import graphql.schema.CoercingParseValueException;
 import graphql.schema.CoercingSerializeException;
 import io.vertx.core.json.JsonObject;
 
-import java.util.Map;
-import java.util.stream.Collectors;
+import static java.util.stream.Collectors.toMap;
 
 /**
  * @author jzb 2019-10-02
  */
 public class EntityDTOCoercing implements Coercing<Object, Object> {
-    public static Map convertImpl(Object o) {
-        if (o instanceof Map) {
-            return (Map) o;
-        }
-        if (o instanceof JsonObject) {
-            final JsonObject jsonObject = (JsonObject) o;
-            return jsonObject.getMap();
-        }
+    public static Object convertImpl(Object o) {
         if (o instanceof ObjectNode) {
             final JsonNode jsonNode = (JsonNode) o;
-            final JsonObject jsonObject = new JsonObject(jsonNode.toString());
-            return jsonObject.getMap();
+            return new JsonObject(jsonNode.toString());
         }
-        return null;
+        return o;
     }
 
     @Override
@@ -51,7 +42,7 @@ public class EntityDTOCoercing implements Coercing<Object, Object> {
             final ObjectValue objectValue = (ObjectValue) input;
             return objectValue.getObjectFields().stream()
                     .filter(it -> "id".equals(it.getName()))
-                    .collect(Collectors.toMap(ObjectField::getName, it -> {
+                    .collect(toMap(ObjectField::getName, it -> {
                         final StringValue stringValue = (StringValue) it.getValue();
                         return stringValue.getValue();
                     }));

@@ -32,6 +32,7 @@ public class JgraphqlModule extends AbstractModule {
         return RuntimeWiring.newRuntimeWiring()
                 .scalar(Jgraphql.getGraphQLLocalDate())
                 .scalar(Jgraphql.getGraphQLLocalDateTime())
+                .scalar(Jgraphql.getGraphQLJson())
                 .wiringFactory(new WiringFactory() {
                     @Override
                     public DataFetcher getDefaultDataFetcher(FieldWiringEnvironment environment) {

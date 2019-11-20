@@ -1,14 +1,14 @@
 dependencies {
     compile project(":core"),
-            "com.google.inject:guice",
-            "io.vertx:vertx-auth-jwt",
+            "io.vertx:vertx-web",
 
+            "javax:javaee-api",
             "org.hibernate.validator:hibernate-validator",
             "org.glassfish:javax.el"
 
     testCompile "com.github.ixtf.persistence:mongo",
             "com.github.ixtf.japp:poi"
-    
+
     testCompile group: 'org.bouncycastle', name: 'bcprov-ext-jdk15on', version: '1.61'
     testCompile group: 'org.bouncycastle', name: 'bcpkix-jdk15on', version: '1.61'
     testCompile group: 'org.bouncycastle', name: 'bcprov-jdk15on', version: '1.61'

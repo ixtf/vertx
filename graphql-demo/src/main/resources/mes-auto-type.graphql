@@ -1,6 +1,7 @@
 scalar Long
 scalar LocalDate
 scalar LocalDateTime
+scalar Json
 
 type Operator {
     id: ID!

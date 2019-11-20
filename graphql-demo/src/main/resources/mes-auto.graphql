@@ -1,6 +1,7 @@
 type Mutation {
     createOperator(command:OperatorUpdateCommand!): Operator
     updateOperator(id: ID!,command:OperatorUpdateCommand!): Operator
+    test(id: ID!,command:Json!): Operator
 }
 
 type Query {
