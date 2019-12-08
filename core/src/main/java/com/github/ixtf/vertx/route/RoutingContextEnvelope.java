@@ -148,6 +148,13 @@ public class RoutingContextEnvelope {
             return NumberUtils::createInteger;
         }
 
+        if (long.class.isAssignableFrom(parameterType)) {
+            return NumberUtils::toLong;
+        }
+        if (Long.class.isAssignableFrom(parameterType)) {
+            return NumberUtils::createLong;
+        }
+
         if (float.class.isAssignableFrom(parameterType)) {
             return NumberUtils::toFloat;
         }

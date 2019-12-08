@@ -1,14 +1,14 @@
 package com.github.ixtf.vertx;
 
-import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.Set;
 
 @Data
-@Builder
+@NoArgsConstructor
 public class CorsConfig {
-    private final Set<String> domainPatterns;
-    private final Set<String> allowedHeaders;
-    private final boolean allowCredentials;
+    private Set<String> domainPatterns;
+    private Set<String> allowedHeaders;
+    private boolean allowCredentials;
 }

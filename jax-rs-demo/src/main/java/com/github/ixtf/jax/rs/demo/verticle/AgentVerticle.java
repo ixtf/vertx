@@ -20,7 +20,7 @@ public class AgentVerticle extends AbstractVerticle {
 
     @Override
     public void start(Future<Void> startFuture) throws Exception {
-        final Router router = Jvertx.router(vertx, CorsConfig.builder().build());
+        final Router router = Jvertx.router(vertx, new CorsConfig());
 
         final Redis redis = Redis.createClient(vertx, new RedisOptions());
 
