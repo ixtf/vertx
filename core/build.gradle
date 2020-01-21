@@ -1,3 +1,4 @@
 dependencies {
     compile "com.google.inject:guice"
+    compile group: 'io.projectreactor.addons', name: 'reactor-adapter'
 }

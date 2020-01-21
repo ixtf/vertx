@@ -6,6 +6,7 @@ import com.github.benmanes.caffeine.cache.LoadingCache;
 import com.github.ixtf.japp.core.Constant;
 import com.github.ixtf.japp.core.J;
 import com.github.ixtf.japp.core.exception.JError;
+import io.vertx.core.Future;
 import io.vertx.core.Handler;
 import io.vertx.core.Vertx;
 import io.vertx.core.http.HttpMethod;
@@ -13,10 +14,10 @@ import io.vertx.core.http.HttpServerResponse;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
-import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.ResponseContentTypeHandler;
 import lombok.SneakyThrows;
+import reactor.core.publisher.Mono;
 
 import javax.validation.*;
 import java.util.Arrays;
@@ -85,9 +86,23 @@ public final class Jvertx {
         return router(vertx, corsConfig, Jvertx::failureHandler);
     }
 
+    public static <T> Mono<T> mono(Future<T> future) {
+        return Mono.create(monoSink -> future.setHandler(it -> {
+            if (it.succeeded()) {
+                final T result = it.result();
+                if (result == null) {
+                    monoSink.success();
+                } else {
+                    monoSink.success(result);
+                }
+            } else {
+                monoSink.error(it.cause());
+            }
+        }));
+    }
+
     public static Router router(Vertx vertx, CorsConfig corsConfig, Handler<RoutingContext> failureHandler) {
         final Router router = Router.router(vertx);
-        router.route().handler(BodyHandler.create());
         router.route().handler(ResponseContentTypeHandler.create());
         final String domainP = Stream.concat(
                 Stream.of("localhost", "127\\.0\\.0\\.1").parallel(),
